@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}{{ candidate.title }} — Candidate{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div>
+        <h1 class="h3 mb-1">{{ candidate.title }}</h1>
+        <p class="text-muted mb-0">
+            Batch: <a href="{% url 'ai_extraction:batch_detail' candidate.batch.pk %}">{{ candidate.batch.title }}</a>
+            · <span class="badge bg-secondary">{{ candidate.get_import_status_display }}</span>
+        </p>
+    </div>
+    <div class="btn-group">
+        <a href="{% url 'ai_extraction:candidate_update' candidate.pk %}" class="btn btn-outline-primary">Edit</a>
+        {% if candidate.import_status == 'pending' %}
+        <form method="post" action="{% url 'ai_extraction:candidate_import' candidate.pk %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success">Import to Knowledge Unit</button>
+        </form>
+        <form method="post" action="{% url 'ai_extraction:candidate_reject' candidate.pk %}" class="d-inline" onsubmit="return confirm('Reject this candidate?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger">Reject</button>
+        </form>
+        {% elif candidate.import_status == 'imported' and candidate.imported_knowledge_unit %}
+        <a href="{% url 'knowledge:knowledgeunit_detail' candidate.imported_knowledge_unit.pk %}" class="btn btn-success">View imported unit</a>
+        {% endif %}
+    </div>
+</div>
+{% if similar_units %}
+<div class="alert alert-warning">
+    <strong>Similar knowledge units already exist:</strong>
+    <ul class="mb-0 mt-2">
+        {% for unit in similar_units %}
+        <li><a href="{% url 'knowledge:knowledgeunit_detail' unit.pk %}">{{ unit.title }}</a></li>
+        {% endfor %}
+    </ul>
+    <p class="mb-0 small mt-2">Review before importing to avoid duplicates. Import still creates an AI-extracted unit for your review.</p>
+</div>
+{% endif %}
+<div class="row">
+    <div class="col-lg-8">
+        {% if candidate.executive_insight %}
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Executive insight</h2>
+            <p class="mb-0">{{ candidate.executive_insight|linebreaks }}</p>
+        </div>
+        {% endif %}
+        {% if candidate.detailed_explanation %}
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Detailed explanation</h2>
+            <p class="mb-0">{{ candidate.detailed_explanation|linebreaks }}</p>
+        </div>
+        {% endif %}
+    </div>
+    <div class="col-lg-4">
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Classification</h2>
+            <dl class="row mb-0 small">
+                <dt class="col-5">Type</dt>
+                <dd class="col-7">{{ candidate.get_proposed_knowledge_type_display|default:"—" }}</dd>
+                <dt class="col-5">Domain</dt>
+                <dd class="col-7">{{ candidate.proposed_domain|default:candidate.batch.source.primary_domain|default:"—" }}</dd>
+                <dt class="col-5">Subdomain</dt>
+                <dd class="col-7">{{ candidate.proposed_subdomain|default:"—" }}</dd>
+                <dt class="col-5">Source</dt>
+                <dd class="col-7">{{ candidate.batch.source|default:"—" }}</dd>
+                <dt class="col-5">Chapter</dt>
+                <dd class="col-7">{{ candidate.batch.chapter|default:"—" }}</dd>
+            </dl>
+        </div>
+        {% if candidate.reviewer_notes %}
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Reviewer notes</h2>
+            <p class="mb-0 small">{{ candidate.reviewer_notes|linebreaks }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

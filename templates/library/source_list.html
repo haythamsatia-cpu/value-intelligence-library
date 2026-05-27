@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block title %}Source Library — Value Intelligence Library{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-0">Source Library</h1>
+        <p class="text-muted mb-0">Books, standards, contracts, and reference materials</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'library:bulk_import' %}" class="btn btn-outline-primary">Bulk Import</a>
+        <a href="{% url 'library:source_export_csv' %}" class="btn btn-outline-secondary">Export CSV</a>
+        <a href="{% url 'library:source_create' %}" class="btn btn-primary">Add Source</a>
+    </div>
+</div>
+
+<form method="get" class="detail-section mb-3">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label">Search</label>
+            <input type="search" name="q" value="{{ query }}" class="form-control" placeholder="Title…">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Extension</label>
+            <input type="text" name="extension" value="{{ filter_extension }}" class="form-control" placeholder=".pdf">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Status</label>
+            <select name="status" class="form-select">
+                <option value="">All</option>
+                {% for val, label in statuses %}
+                <option value="{{ val }}" {% if filter_status == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Domain</label>
+            <select name="domain" class="form-select">
+                <option value="">All</option>
+                {% for d in domains %}
+                <option value="{{ d.pk }}" {% if filter_domain == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <input type="hidden" name="view" value="{{ view_mode }}">
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <a href="{% url 'library:source_list' %}" class="btn btn-outline-secondary">Clear</a>
+            {% if view_mode == 'compact' %}
+            <a href="?{% if query %}q={{ query|urlencode }}&{% endif %}{% if filter_extension %}extension={{ filter_extension|urlencode }}&{% endif %}{% if filter_status %}status={{ filter_status }}&{% endif %}{% if filter_domain %}domain={{ filter_domain }}&{% endif %}view=standard" class="btn btn-outline-secondary">Standard view</a>
+            {% else %}
+            <a href="?{% if query %}q={{ query|urlencode }}&{% endif %}{% if filter_extension %}extension={{ filter_extension|urlencode }}&{% endif %}{% if filter_status %}status={{ filter_status }}&{% endif %}{% if filter_domain %}domain={{ filter_domain }}&{% endif %}view=compact" class="btn btn-outline-secondary">Compact</a>
+            {% endif %}
+        </div>
+    </div>
+</form>
+
+<form method="post" action="{% url 'library:source_bulk_update' %}">
+    {% csrf_token %}
+    <input type="hidden" name="next_url" value="{{ request.get_full_path }}">
+    <div class="detail-section mb-2">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small">Bulk domain</label>
+                <select name="bulk_domain" class="form-select form-select-sm">
+                    <option value="">—</option>
+                    {% for d in domains %}<option value="{{ d.pk }}">{{ d.name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">Priority</label>
+                <select name="bulk_priority" class="form-select form-select-sm">
+                    <option value="">—</option>
+                    {% for val, label in priorities %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">Status</label>
+                <select name="bulk_status" class="form-select form-select-sm">
+                    <option value="">—</option>
+                    {% for val, label in statuses %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-sm btn-outline-primary">Update selected</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-card">
+        <table class="table {% if view_mode == 'compact' %}table-sm{% else %}table-hover{% endif %} mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th><input type="checkbox" id="source-select-all"></th>
+                    <th>Title</th>
+                    {% if view_mode != 'compact' %}<th>Type</th>{% endif %}
+                    <th>Ext</th>
+                    <th>File</th>
+                    <th>Readiness</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    {% if view_mode != 'compact' %}<th>Domain</th>{% endif %}
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for source in sources %}
+                <tr>
+                    <td><input type="checkbox" class="source-check" name="source_ids" value="{{ source.pk }}"></td>
+                    <td>
+                        <a href="{% url 'library:source_detail' source.pk %}">{{ source.title|truncatechars:60 }}</a>
+                        {% if source.duplicate_warning %}<span class="badge bg-warning text-dark ms-1" title="Another source shares this title">Dup?</span>{% endif %}
+                    </td>
+                    {% if view_mode != 'compact' %}<td class="small">{{ source.get_source_type_display }}</td>{% endif %}
+                    <td>{% if source.source_extension %}<span class="badge bg-light text-dark">{{ source.source_extension }}</span>{% else %}—{% endif %}</td>
+                    <td class="small">
+                        {% if source.readiness.file_linked %}
+                        <span class="text-success" title="{% if source.original_file_path %}{{ source.original_file_path }}{% else %}Uploaded file{% endif %}">●</span>
+                        {% else %}<span class="text-muted">○</span>{% endif %}
+                    </td>
+                    <td class="small">
+                        {% for key, label, color in source.readiness.labels %}
+                        <span class="badge bg-{{ color }} {% if color == 'light' %}text-dark{% endif %}" title="{{ label }}">{{ key|slice:":1"|upper }}</span>
+                        {% empty %}—{% endfor %}
+                    </td>
+                    <td class="small">{{ source.get_priority_display }}</td>
+                    <td><span class="badge bg-secondary">{{ source.get_status_display }}</span></td>
+                    {% if view_mode != 'compact' %}<td class="small">{{ source.primary_domain|default:"—" }}</td>{% endif %}
+                    <td><a href="{% url 'library:source_update' source.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="10" class="text-center text-muted py-4">No sources yet. <a href="{% url 'library:bulk_import' %}">Bulk import</a> a library.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</form>
+
+{% include 'includes/pagination.html' %}
+
+<script>
+document.getElementById('source-select-all')?.addEventListener('change', function () {
+    document.querySelectorAll('.source-check').forEach(function (cb) { cb.checked = this.checked; }.bind(this));
+});
+</script>
+{% endblock %}

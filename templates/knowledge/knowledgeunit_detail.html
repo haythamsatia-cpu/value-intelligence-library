@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% block title %}{{ knowledge_unit.title }} — Value Intelligence Library{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div>
+        <h1 class="h3 mb-1">{{ knowledge_unit.title }}</h1>
+        <p class="text-muted mb-0">
+            {{ knowledge_unit.get_knowledge_type_display }} ·
+            {{ knowledge_unit.domain.name }} ·
+            <span class="badge bg-secondary">{{ knowledge_unit.get_review_status_display }}</span>
+        </p>
+    </div>
+    <div class="btn-group">
+        <a href="{% url 'knowledge:knowledgeunit_update' knowledge_unit.pk %}" class="btn btn-outline-primary">Edit</a>
+        <a href="{% url 'knowledge:knowledgeunit_delete' knowledge_unit.pk %}" class="btn btn-outline-danger">Delete</a>
+    </div>
+</div>
+<div class="detail-section">
+    <form method="post" action="{% url 'knowledge:knowledgeunit_quick_action' knowledge_unit.pk %}" class="row g-2 align-items-end">
+        {% csrf_token %}
+        <input type="hidden" name="next_url" value="{{ request.get_full_path }}">
+        <div class="col-lg-3">
+            <label class="form-label">Quick review action</label>
+            <select class="form-select" name="action">
+                <option value="mark_reviewed">Mark reviewed</option>
+                <option value="approve">Approve</option>
+                <option value="archive">Archive</option>
+                <option value="mark_duplicate">Mark duplicate</option>
+                <option value="restore_duplicate">Restore duplicate</option>
+            </select>
+        </div>
+        <div class="col-lg-6">
+            <label class="form-label">Approval notes (optional)</label>
+            <input type="text" class="form-control" name="approval_notes" placeholder="Reviewer notes...">
+        </div>
+        <div class="col-lg-3">
+            <button type="submit" class="btn btn-primary w-100">Apply action</button>
+        </div>
+    </form>
+</div>
+<div class="row">
+    <div class="col-lg-8">
+        {% if knowledge_unit.executive_insight %}
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Executive Insight</h2>
+            <p class="mb-0">{{ knowledge_unit.executive_insight|linebreaks }}</p>
+        </div>
+        {% endif %}
+        {% if knowledge_unit.detailed_explanation %}
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Detailed Explanation</h2>
+            <p class="mb-0">{{ knowledge_unit.detailed_explanation|linebreaks }}</p>
+        </div>
+        {% endif %}
+        {% if knowledge_unit.practical_application %}
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Practical Application</h2>
+            <p class="mb-0">{{ knowledge_unit.practical_application|linebreaks }}</p>
+        </div>
+        {% endif %}
+        {% if knowledge_unit.personal_commentary %}
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Personal Commentary</h2>
+            <p class="mb-0">{{ knowledge_unit.personal_commentary|linebreaks }}</p>
+        </div>
+        {% endif %}
+    </div>
+    <div class="col-lg-4">
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Metadata</h2>
+            <dl class="row mb-0 small">
+                <dt class="col-5">Subdomain</dt>
+                <dd class="col-7">{{ knowledge_unit.subdomain|default:"—" }}</dd>
+                <dt class="col-5">Topic</dt>
+                <dd class="col-7">{{ knowledge_unit.topic|default:"—" }}</dd>
+                <dt class="col-5">Concept</dt>
+                <dd class="col-7">{{ knowledge_unit.concept|default:"—" }}</dd>
+                <dt class="col-5">Source</dt>
+                <dd class="col-7">{% if knowledge_unit.source %}<a href="{% url 'library:source_detail' knowledge_unit.source.pk %}">{{ knowledge_unit.source.title }}</a>{% else %}—{% endif %}</dd>
+                <dt class="col-5">Page</dt>
+                <dd class="col-7">{{ knowledge_unit.page_reference|default:"—" }}</dd>
+                <dt class="col-5">Difficulty</dt>
+                <dd class="col-7">{{ knowledge_unit.get_difficulty_level_display }}</dd>
+                <dt class="col-5">Consulting</dt>
+                <dd class="col-7">{{ knowledge_unit.get_consulting_value_display }}</dd>
+                <dt class="col-5">Teaching</dt>
+                <dd class="col-7">{{ knowledge_unit.get_teaching_value_display }}</dd>
+                <dt class="col-5">Use this?</dt>
+                <dd class="col-7">{% if knowledge_unit.would_i_use_this %}Yes{% else %}No{% endif %}</dd>
+                <dt class="col-5">Tags</dt>
+                <dd class="col-7">{% for t in knowledge_unit.tags.all %}{{ t.name }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</dd>
+                <dt class="col-5">Governance</dt>
+                <dd class="col-7">{{ knowledge_unit.get_governance_status_display }}</dd>
+                <dt class="col-5">Reviewed by</dt>
+                <dd class="col-7">{{ knowledge_unit.reviewed_by|default:"—" }}</dd>
+                <dt class="col-5">Reviewed at</dt>
+                <dd class="col-7">{{ knowledge_unit.reviewed_at|default:"—" }}</dd>
+                <dt class="col-5">Confidence</dt>
+                <dd class="col-7">{{ knowledge_unit.get_confidence_level_display }}</dd>
+                <dt class="col-5">Source quality</dt>
+                <dd class="col-7">{{ knowledge_unit.get_source_quality_display }}</dd>
+                <dt class="col-5">Duplicate</dt>
+                <dd class="col-7">{% if knowledge_unit.is_duplicate %}Yes{% else %}No{% endif %}</dd>
+                {% if knowledge_unit.imported_via %}
+                <dt class="col-5">Imported via</dt>
+                <dd class="col-7">{{ knowledge_unit.get_imported_via_display }}</dd>
+                {% endif %}
+                {% if knowledge_unit.imported_from_batch %}
+                <dt class="col-5">Import batch</dt>
+                <dd class="col-7"><a href="{% url 'ai_extraction:batch_detail' knowledge_unit.imported_from_batch.pk %}">{{ knowledge_unit.imported_from_batch.title }}</a></dd>
+                {% endif %}
+            </dl>
+        </div>
+        {% if knowledge_unit.citation %}
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Citation</h2>
+            <p class="mb-0 small">{{ knowledge_unit.citation|linebreaks }}</p>
+        </div>
+        {% endif %}
+        {% if knowledge_unit.approval_notes %}
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Approval Notes</h2>
+            <p class="mb-0 small">{{ knowledge_unit.approval_notes|linebreaks }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+<div class="detail-section">
+    <h2 class="h6 text-uppercase text-muted">Possible Duplicates</h2>
+    <ul class="list-group list-group-flush">
+        {% for dup in possible_duplicates %}
+        <li class="list-group-item px-0 d-flex justify-content-between">
+            <a href="{% url 'knowledge:knowledgeunit_detail' dup.pk %}">{{ dup.title }}</a>
+            <span class="badge bg-light text-dark">{{ dup.get_governance_status_display }}</span>
+        </li>
+        {% empty %}
+        <li class="list-group-item px-0 text-muted">No obvious duplicate candidates found.</li>
+        {% endfor %}
+    </ul>
+</div>
+<div class="detail-section mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h6 text-uppercase text-muted mb-0">Relationships</h2>
+        <a href="{% url 'knowledge:relationship_create' %}?from_knowledge_unit={{ knowledge_unit.pk }}" class="btn btn-sm btn-outline-primary">Add outgoing link</a>
+    </div>
+  {% if knowledge_unit.outgoing_relationships.all or knowledge_unit.incoming_relationships.all %}
+    <h3 class="h6">Outgoing</h3>
+    <ul class="list-group list-group-flush mb-3">
+        {% for rel in knowledge_unit.outgoing_relationships.all %}
+        <li class="list-group-item px-0">
+            <a href="{% url 'knowledge:relationship_detail' rel.pk %}">{{ rel.get_relationship_type_display }}</a>
+            → <a href="{% url 'knowledge:knowledgeunit_detail' rel.to_knowledge_unit.pk %}">{{ rel.to_knowledge_unit.title }}</a>
+        </li>
+        {% empty %}
+        <li class="list-group-item px-0 text-muted">No outgoing relationships.</li>
+        {% endfor %}
+    </ul>
+    <h3 class="h6">Incoming</h3>
+    <ul class="list-group list-group-flush">
+        {% for rel in knowledge_unit.incoming_relationships.all %}
+        <li class="list-group-item px-0">
+            <a href="{% url 'knowledge:knowledgeunit_detail' rel.from_knowledge_unit.pk %}">{{ rel.from_knowledge_unit.title }}</a>
+            — <a href="{% url 'knowledge:relationship_detail' rel.pk %}">{{ rel.get_relationship_type_display }}</a>
+        </li>
+        {% empty %}
+        <li class="list-group-item px-0 text-muted">No incoming relationships.</li>
+        {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-muted mb-0">No relationships yet. <a href="{% url 'knowledge:relationship_list' %}">Manage relationships</a></p>
+  {% endif %}
+</div>
+{% endblock %}

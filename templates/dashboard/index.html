@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard — Value Intelligence Library{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1 class="h3 mb-0">Dashboard</h1>
+    <p class="text-muted mb-0">Overview of your construction intelligence library</p>
+</div>
+<div class="row g-3">
+    <div class="col-md-4 col-lg-2">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <div class="stat-value">{{ total_sources }}</div>
+                <div class="text-muted small">Sources</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-2">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <div class="stat-value">{{ total_chapters }}</div>
+                <div class="text-muted small">Chapters</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-2">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <div class="stat-value">{{ total_knowledge_units }}</div>
+                <div class="text-muted small">Knowledge Units</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-2">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <div class="stat-value">{{ approved_knowledge_units }}</div>
+                <div class="text-muted small">Approved Units</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-2">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <div class="stat-value">{{ draft_knowledge_units }}</div>
+                <div class="text-muted small">Draft Units</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-2">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <div class="stat-value">{{ sources_in_progress }}</div>
+                <div class="text-muted small">Sources In Progress</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-2">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <div class="stat-value">{{ pending_review_units }}</div>
+                <div class="text-muted small">Pending Review</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-2">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <div class="stat-value">{{ fast_imported_units }}</div>
+                <div class="text-muted small">Fast Imported</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 col-lg-2">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <div class="stat-value">{{ candidate_reviewed_units }}</div>
+                <div class="text-muted small">Candidate Reviewed</div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="mt-4">
+    <h2 class="h5">Quick links</h2>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'library:source_create' %}" class="btn btn-outline-primary btn-sm">Add Source</a>
+        <a href="{% url 'knowledge:knowledgeunit_create' %}" class="btn btn-outline-primary btn-sm">Add Knowledge Unit</a>
+        <a href="{% url 'taxonomy:domain_create' %}" class="btn btn-outline-secondary btn-sm">Add Domain</a>
+        <a href="{% url 'dashboard:search' %}" class="btn btn-outline-secondary btn-sm">Search</a>
+    </div>
+</div>
+{% endblock %}

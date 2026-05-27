@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}{{ author.name }} — Value Intelligence Library{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div>
+        <h1 class="h3 mb-1">{{ author.name }}</h1>
+        <p class="text-muted mb-0">{{ author.organization|default:"No organization listed" }}</p>
+    </div>
+    <div class="btn-group">
+        <a href="{% url 'library:author_update' author.pk %}" class="btn btn-outline-primary">Edit</a>
+        <a href="{% url 'library:author_delete' author.pk %}" class="btn btn-outline-danger">Delete</a>
+    </div>
+</div>
+{% if author.notes %}
+<div class="detail-section">
+    <h2 class="h6 text-uppercase text-muted">Notes</h2>
+    <p class="mb-0">{{ author.notes|linebreaks }}</p>
+</div>
+{% endif %}
+<div class="detail-section">
+    <h2 class="h6 text-uppercase text-muted">Linked Sources</h2>
+    <ul class="list-group list-group-flush">
+        {% for source in author.sources.all %}
+        <li class="list-group-item px-0">
+            <a href="{% url 'library:source_detail' source.pk %}">{{ source.title }}</a>
+        </li>
+        {% empty %}
+        <li class="list-group-item px-0 text-muted">No sources linked to this author.</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

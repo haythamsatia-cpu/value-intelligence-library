@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}Extraction Candidates — AI Extraction{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h1 class="h3 mb-0">Extraction Candidates</h1>
+        <p class="text-muted mb-0"><a href="{% url 'ai_extraction:dashboard' %}">← AI Extraction</a></p>
+    </div>
+    <a href="{% url 'ai_extraction:candidate_create' %}" class="btn btn-primary">Add Candidate</a>
+</div>
+<div class="filter-bar">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label">Batch</label>
+            <select name="batch" class="form-select">
+                <option value="">All batches</option>
+                {% for b in batches %}
+                <option value="{{ b.pk }}" {% if filter_batch == b.pk|stringformat:"s" %}selected{% endif %}>{{ b.title|truncatechars:40 }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Import status</label>
+            <select name="import_status" class="form-select">
+                <option value="">All</option>
+                {% for value, label in import_statuses %}
+                <option value="{{ value }}" {% if filter_import_status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Proposed domain</label>
+            <select name="proposed_domain" class="form-select">
+                <option value="">All</option>
+                {% for d in domains %}
+                <option value="{{ d.pk }}" {% if filter_domain == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Knowledge type</label>
+            <select name="proposed_knowledge_type" class="form-select">
+                <option value="">All</option>
+                {% for value, label in knowledge_types %}
+                <option value="{{ value }}" {% if filter_knowledge_type == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-12">
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <a href="{% url 'ai_extraction:candidate_list' %}" class="btn btn-outline-secondary">Clear</a>
+        </div>
+    </form>
+</div>
+
+<form method="post" id="bulk-candidate-form">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <button type="submit" formaction="{% url 'ai_extraction:candidate_bulk_import' %}" class="btn btn-success btn-sm"
+                onclick="return confirm('Import selected pending candidates as knowledge units (AI extracted)?');">
+            Bulk import
+        </button>
+        <button type="submit" formaction="{% url 'ai_extraction:candidate_bulk_reject' %}" class="btn btn-outline-danger btn-sm"
+                onclick="return confirm('Reject selected pending candidates?');">
+            Bulk reject
+        </button>
+    </div>
+    <div class="table-card">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:2rem;"><input type="checkbox" id="select-all-candidates" title="Select all on page"></th>
+                    <th>Title</th>
+                    <th>Batch</th>
+                    <th>Domain</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for candidate in candidates %}
+                <tr>
+                    <td>
+                        {% if candidate.import_status == 'pending' %}
+                        <input type="checkbox" name="candidate_ids" value="{{ candidate.pk }}" class="candidate-checkbox">
+                        {% endif %}
+                    </td>
+                    <td><a href="{% url 'ai_extraction:candidate_detail' candidate.pk %}">{{ candidate.title }}</a></td>
+                    <td>{{ candidate.batch.title|truncatechars:30 }}</td>
+                    <td>{{ candidate.proposed_domain|default:"—" }}</td>
+                    <td>{{ candidate.get_proposed_knowledge_type_display|default:"—" }}</td>
+                    <td><span class="badge bg-secondary">{{ candidate.get_import_status_display }}</span></td>
+                    <td><a href="{% url 'ai_extraction:candidate_update' candidate.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-muted py-4">No candidates.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</form>
+{% include 'includes/pagination.html' %}
+<script>
+document.getElementById('select-all-candidates')?.addEventListener('change', function () {
+    document.querySelectorAll('.candidate-checkbox').forEach(function (cb) {
+        cb.checked = document.getElementById('select-all-candidates').checked;
+    });
+});
+</script>
+{% endblock %}

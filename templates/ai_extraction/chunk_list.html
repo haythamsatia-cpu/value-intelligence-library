@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Text Chunks — AI Extraction{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1 class="h3 mb-0">Text Chunks</h1>
+    <p class="text-muted mb-0"><a href="{% url 'ai_extraction:ingestion_list' %}">← Document Ingestion</a></p>
+</div>
+<div class="table-card">
+    <table class="table table-hover mb-0">
+        <thead class="table-light">
+            <tr><th>Title</th><th>#</th><th>Pages</th><th>Batch</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for chunk in chunks %}
+            <tr>
+                <td><a href="{% url 'ai_extraction:chunk_detail' chunk.pk %}">{{ chunk.title|truncatechars:60 }}</a></td>
+                <td>{{ chunk.chunk_number }}</td>
+                <td>{% if chunk.start_page %}{{ chunk.start_page }}–{{ chunk.end_page|default:"?" }}{% else %}—{% endif %}</td>
+                <td>{% if chunk.created_batch %}<a href="{% url 'ai_extraction:batch_detail' chunk.created_batch.pk %}">Yes</a>{% else %}—{% endif %}</td>
+                <td><a href="{% url 'ai_extraction:chunk_detail' chunk.pk %}" class="btn btn-sm btn-outline-primary">Open</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-muted py-4">No text chunks.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% include 'includes/pagination.html' %}
+{% endblock %}

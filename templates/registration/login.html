@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Login — Value Intelligence Library{% endblock %}
+{% block content %}
+<div class="login-page">
+    <div class="card login-card">
+        <div class="card-body p-4">
+            <h1 class="h4 mb-1 text-center">Value Intelligence Library</h1>
+            <p class="text-muted text-center small mb-4">Private local knowledge system</p>
+            {% if form.errors %}
+            <div class="alert alert-danger">Invalid username or password.</div>
+            {% endif %}
+            <form method="post" action="{% url 'login' %}">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="id_username" class="form-label">Username</label>
+                    <input type="text" name="username" id="id_username" class="form-control" required autofocus>
+                </div>
+                <div class="mb-3">
+                    <label for="id_password" class="form-label">Password</label>
+                    <input type="password" name="password" id="id_password" class="form-control" required>
+                </div>
+                <input type="hidden" name="next" value="{{ next }}">
+                <button type="submit" class="btn btn-primary w-100">Sign in</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

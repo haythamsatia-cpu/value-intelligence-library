@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block title %}{% if batch %}Edit{% else %}New{% endif %} Extraction Batch{% endblock %}
+{% block content %}
+<div class="page-header"><h1 class="h3 mb-0">{% if batch %}Edit{% else %}New{% endif %} Extraction Batch</h1></div>
+<div class="detail-section">
+    <form method="post">{% csrf_token %}{% include 'includes/form_fields.html' %}
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a href="{% if batch %}{% url 'ai_extraction:batch_detail' batch.pk %}{% else %}{% url 'ai_extraction:batch_list' %}{% endif %}" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}Delete Prompt Template{% endblock %}
+{% block content %}
+<div class="detail-section">
+    <h1 class="h4">Delete Prompt Template</h1>
+    <p>Delete <strong>{{ template.name }}</strong>? Batches using this template cannot be deleted if referenced.</p>
+    <form method="post">{% csrf_token %}
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a href="{% url 'ai_extraction:prompt_detail' template.pk %}" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

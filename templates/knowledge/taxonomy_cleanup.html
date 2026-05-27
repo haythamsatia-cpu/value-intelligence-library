@@ -1,0 +1,374 @@
+{% extends 'base.html' %}
+{% block title %}Taxonomy Cleanup — Value Intelligence Library{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-0">Taxonomy Cleanup</h1>
+        <p class="text-muted mb-0">Bulk-assign taxonomy and review fields after fast import</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'knowledge:taxonomy_cleanup_export_csv' %}?{{ request.GET.urlencode }}" class="btn btn-outline-secondary">Export CSV</a>
+        <a href="{% url 'knowledge:review_queue' %}" class="btn btn-outline-secondary">Review Queue</a>
+        <a href="{% url 'knowledge:knowledgeunit_list' %}" class="btn btn-outline-secondary">All Units</a>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-2">
+        <a href="?mode=uncategorized" class="text-decoration-none">
+            <div class="card stat-card h-100"><div class="card-body text-center">
+                <div class="stat-value">{{ summary_metrics.uncategorized }}</div>
+                <div class="small text-muted">Uncategorized</div>
+            </div></div>
+        </a>
+    </div>
+    <div class="col-md-2">
+        <a href="?mode=missing_subdomain" class="text-decoration-none">
+            <div class="card stat-card h-100"><div class="card-body text-center">
+                <div class="stat-value">{{ summary_metrics.missing_subdomain }}</div>
+                <div class="small text-muted">Missing Subdomain</div>
+            </div></div>
+        </a>
+    </div>
+    <div class="col-md-2">
+        <a href="?mode=missing_topic" class="text-decoration-none">
+            <div class="card stat-card h-100"><div class="card-body text-center">
+                <div class="stat-value">{{ summary_metrics.missing_topic }}</div>
+                <div class="small text-muted">Missing Topic</div>
+            </div></div>
+        </a>
+    </div>
+    <div class="col-md-2">
+        <a href="?mode=missing_concept" class="text-decoration-none">
+            <div class="card stat-card h-100"><div class="card-body text-center">
+                <div class="stat-value">{{ summary_metrics.missing_concept }}</div>
+                <div class="small text-muted">Missing Concept</div>
+            </div></div>
+        </a>
+    </div>
+    <div class="col-md-2">
+        <a href="?mode=fast_imported" class="text-decoration-none">
+            <div class="card stat-card h-100"><div class="card-body text-center">
+                <div class="stat-value">{{ summary_metrics.fast_imported }}</div>
+                <div class="small text-muted">Fast Imported</div>
+            </div></div>
+        </a>
+    </div>
+    <div class="col-md-2">
+        <a href="?mode=pending_review" class="text-decoration-none">
+            <div class="card stat-card h-100"><div class="card-body text-center">
+                <div class="stat-value">{{ summary_metrics.pending_review }}</div>
+                <div class="small text-muted">Pending Review</div>
+            </div></div>
+        </a>
+    </div>
+</div>
+
+<div class="detail-section mb-3">
+    <h2 class="h6 text-uppercase text-muted">Quick modes</h2>
+    <div class="d-flex flex-wrap gap-2">
+        {% for mode_key, mode_label in cleanup_modes %}
+        <a class="btn btn-sm {% if mode == mode_key %}btn-dark{% else %}btn-outline-dark{% endif %}"
+           href="?{% if mode_key %}mode={{ mode_key }}{% endif %}">{{ mode_label }}</a>
+        {% endfor %}
+    </div>
+    <p class="form-text mb-0 mt-2">Default scope: Uncategorized domain, or any missing subdomain, topic, or concept.</p>
+</div>
+
+<div class="filter-bar">
+    <form method="get" class="row g-2 align-items-end">
+        {% if mode %}<input type="hidden" name="mode" value="{{ mode }}">{% endif %}
+        <div class="col-md-2">
+            <label class="form-label">Search</label>
+            <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Title, insight, notes...">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Source</label>
+            <select name="source" class="form-select">
+                <option value="">All</option>
+                {% for s in sources %}
+                <option value="{{ s.pk }}" {% if filter_source == s.pk|stringformat:"s" %}selected{% endif %}>{{ s.title|truncatechars:24 }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Imported via</label>
+            <select name="imported_via" class="form-select">
+                <option value="">All</option>
+                {% for value, label in imported_via_choices %}
+                <option value="{{ value }}" {% if filter_imported_via == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Review status</label>
+            <select name="review_status" class="form-select">
+                <option value="">All</option>
+                {% for value, label in review_statuses %}
+                <option value="{{ value }}" {% if filter_review_status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Governance</label>
+            <select name="governance_status" class="form-select">
+                <option value="">All</option>
+                {% for value, label in governance_statuses %}
+                <option value="{{ value }}" {% if filter_governance_status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Domain</label>
+            <select name="domain" class="form-select">
+                <option value="">All</option>
+                {% for d in domains %}
+                <option value="{{ d.pk }}" {% if filter_domain == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Subdomain</label>
+            <select name="subdomain" class="form-select">
+                <option value="">All</option>
+                {% for sd in subdomains %}
+                <option value="{{ sd.pk }}" {% if filter_subdomain == sd.pk|stringformat:"s" %}selected{% endif %}>{{ sd.domain.name }} / {{ sd.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Topic</label>
+            <select name="topic" class="form-select">
+                <option value="">All</option>
+                {% for t in topics %}
+                <option value="{{ t.pk }}" {% if filter_topic == t.pk|stringformat:"s" %}selected{% endif %}>{{ t.subdomain.domain.name }} / {{ t.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Concept</label>
+            <select name="concept" class="form-select">
+                <option value="">All</option>
+                {% for c in concepts %}
+                <option value="{{ c.pk }}" {% if filter_concept == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.topic.subdomain.domain.name }} / {{ c.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Knowledge type</label>
+            <select name="knowledge_type" class="form-select">
+                <option value="">All</option>
+                {% for value, label in knowledge_types %}
+                <option value="{{ value }}" {% if filter_knowledge_type == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-1">
+            <label class="form-label">Consulting</label>
+            <select name="consulting_value" class="form-select">
+                <option value="">All</option>
+                {% for value, label in value_levels %}
+                <option value="{{ value }}" {% if filter_consulting_value == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-1">
+            <label class="form-label">Teaching</label>
+            <select name="teaching_value" class="form-select">
+                <option value="">All</option>
+                {% for value, label in value_levels %}
+                <option value="{{ value }}" {% if filter_teaching_value == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Created from</label>
+            <input type="date" name="created_from" value="{{ filter_created_from }}" class="form-control">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Created to</label>
+            <input type="date" name="created_to" value="{{ filter_created_to }}" class="form-control">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Order</label>
+            <select name="ordering" class="form-select">
+                <option value="-created_at" {% if ordering == '-created_at' %}selected{% endif %}>Newest first</option>
+                <option value="created_at" {% if ordering == 'created_at' %}selected{% endif %}>Oldest first</option>
+                <option value="-updated_at" {% if ordering == '-updated_at' %}selected{% endif %}>Recently updated</option>
+                <option value="title" {% if ordering == 'title' %}selected{% endif %}>Title A–Z</option>
+            </select>
+        </div>
+        <div class="col-md-1">
+            <button type="submit" class="btn btn-primary w-100">Filter</button>
+        </div>
+    </form>
+</div>
+
+<form method="post" action="{% url 'knowledge:taxonomy_cleanup_bulk_update' %}">
+    {% csrf_token %}
+    <input type="hidden" name="next_url" value="{{ request.get_full_path }}">
+
+    <div class="detail-section mb-3 border-primary">
+        <h2 class="h6 text-uppercase text-muted">Bulk update selected</h2>
+        <p class="small text-muted">Leave fields blank to keep existing values on each unit. Tags are added, not replaced.</p>
+        <div class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label">Domain</label>
+                <select name="bulk_domain" class="form-select">
+                    <option value="">— no change —</option>
+                    {% for d in domains %}
+                    <option value="{{ d.pk }}">{{ d.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Subdomain</label>
+                <select name="bulk_subdomain" class="form-select">
+                    <option value="">— no change —</option>
+                    {% for sd in subdomains %}
+                    <option value="{{ sd.pk }}">{{ sd.domain.name }} / {{ sd.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Topic</label>
+                <select name="bulk_topic" class="form-select">
+                    <option value="">— no change —</option>
+                    {% for t in topics %}
+                    <option value="{{ t.pk }}">{{ t.subdomain.domain.name }} / {{ t.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Concept</label>
+                <select name="bulk_concept" class="form-select">
+                    <option value="">— no change —</option>
+                    {% for c in concepts %}
+                    <option value="{{ c.pk }}">{{ c.topic.subdomain.domain.name }} / {{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Add tags</label>
+                <select name="bulk_tags" multiple class="form-select" style="min-height: 38px;">
+                    {% for tag in all_tags %}
+                    <option value="{{ tag.pk }}">{{ tag.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Knowledge type</label>
+                <select name="bulk_knowledge_type" class="form-select">
+                    <option value="">— no change —</option>
+                    {% for value, label in knowledge_types %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">Consulting</label>
+                <select name="bulk_consulting_value" class="form-select">
+                    <option value="">—</option>
+                    {% for value, label in value_levels %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">Teaching</label>
+                <select name="bulk_teaching_value" class="form-select">
+                    <option value="">—</option>
+                    {% for value, label in value_levels %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">Confidence</label>
+                <select name="bulk_confidence_level" class="form-select">
+                    <option value="">—</option>
+                    {% for value, label in value_levels %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">Src quality</label>
+                <select name="bulk_source_quality" class="form-select">
+                    <option value="">—</option>
+                    {% for value, label in value_levels %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Governance</label>
+                <select name="bulk_governance_status" class="form-select">
+                    <option value="">— no change —</option>
+                    {% for value, label in governance_statuses %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" name="bulk_action" value="taxonomy_update" class="btn btn-primary w-100">Apply taxonomy updates</button>
+            </div>
+        </div>
+        <div class="d-flex flex-wrap gap-2 mt-3">
+            <button type="submit" name="bulk_action" value="set_reviewed" class="btn btn-outline-secondary btn-sm">Set selected to reviewed</button>
+            <button type="submit" name="bulk_action" value="set_approved" class="btn btn-outline-success btn-sm">Set selected to approved</button>
+            <button type="submit" name="bulk_action" value="mark_duplicate" class="btn btn-outline-warning btn-sm">Mark selected as duplicate</button>
+            <button type="submit" name="bulk_action" value="archive_selected" class="btn btn-outline-danger btn-sm">Archive selected</button>
+        </div>
+    </div>
+
+    <div class="table-card">
+        <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th><input type="checkbox" id="select-all"></th>
+                    <th>Title</th>
+                    <th>Source</th>
+                    <th>Domain</th>
+                    <th>Subdomain</th>
+                    <th>Topic</th>
+                    <th>Concept</th>
+                    <th>Type</th>
+                    <th>Consult.</th>
+                    <th>Teach.</th>
+                    <th>Executive insight</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for unit in knowledge_units %}
+                <tr>
+                    <td><input type="checkbox" class="row-checkbox" name="unit_ids" value="{{ unit.pk }}"></td>
+                    <td><a href="{% url 'knowledge:knowledgeunit_detail' unit.pk %}">{{ unit.title|truncatechars:42 }}</a></td>
+                    <td class="small">{% if unit.source %}{{ unit.source.title|truncatechars:20 }}{% else %}—{% endif %}</td>
+                    <td class="small">{{ unit.domain.name }}</td>
+                    <td class="small">{{ unit.subdomain.name|default:"—" }}</td>
+                    <td class="small">{{ unit.topic.name|default:"—" }}</td>
+                    <td class="small">{{ unit.concept.name|default:"—" }}</td>
+                    <td class="small">{{ unit.get_knowledge_type_display }}</td>
+                    <td class="small">{{ unit.get_consulting_value_display }}</td>
+                    <td class="small">{{ unit.get_teaching_value_display }}</td>
+                    <td class="small text-muted">{{ unit.executive_insight|truncatechars:80|default:"—" }}</td>
+                    <td class="small text-nowrap">{{ unit.created_at|date:"Y-m-d" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="12" class="text-center text-muted py-4">No knowledge units match the current filters.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</form>
+
+{% include 'includes/pagination.html' %}
+
+<script>
+document.getElementById('select-all')?.addEventListener('change', function () {
+    document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = this.checked);
+});
+</script>
+{% endblock %}

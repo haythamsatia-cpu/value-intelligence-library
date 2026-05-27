@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+{% block title %}Processing Center — Value Intelligence Library{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-0">Source Processing Center</h1>
+        <p class="text-muted mb-0">Operational visibility across ingestion, extraction, and review</p>
+    </div>
+    <a href="{% url 'library:processing_center_export_csv' %}?{{ request.GET.urlencode }}" class="btn btn-outline-secondary">Export CSV</a>
+</div>
+
+<div class="row g-2 mb-3">
+    <div class="col-md-2"><div class="card stat-card h-100"><div class="card-body text-center py-2"><div class="stat-value">{{ global_metrics.total_sources }}</div><div class="small text-muted">Total Sources</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card h-100"><div class="card-body text-center py-2"><div class="stat-value">{{ global_metrics.active_sources }}</div><div class="small text-muted">Active</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card h-100"><div class="card-body text-center py-2"><div class="stat-value">{{ global_metrics.sources_pending_review }}</div><div class="small text-muted">Sources Pending Review</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card h-100"><div class="card-body text-center py-2"><div class="stat-value">{{ global_metrics.sources_fully_approved }}</div><div class="small text-muted">Fully Approved</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card h-100"><div class="card-body text-center py-2"><div class="stat-value">{{ global_metrics.total_chunks }}</div><div class="small text-muted">Text Chunks</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card h-100"><div class="card-body text-center py-2"><div class="stat-value">{{ global_metrics.total_batches }}</div><div class="small text-muted">Batches</div></div></div></div>
+</div>
+<div class="row g-2 mb-3">
+    <div class="col-md-2"><div class="card stat-card h-100"><div class="card-body text-center py-2"><div class="stat-value">{{ global_metrics.parsed_batches }}</div><div class="small text-muted">Parsed Batches</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card h-100"><div class="card-body text-center py-2"><div class="stat-value text-danger">{{ global_metrics.failed_parses }}</div><div class="small text-muted">Failed Parses</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card h-100"><div class="card-body text-center py-2"><div class="stat-value">{{ global_metrics.total_imported_units }}</div><div class="small text-muted">Imported Units</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card h-100"><div class="card-body text-center py-2"><div class="stat-value">{{ global_metrics.approved_units }}</div><div class="small text-muted">Approved Units</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card h-100"><div class="card-body text-center py-2"><div class="stat-value">{{ global_metrics.duplicate_suspects }}</div><div class="small text-muted">Duplicate Suspects</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card h-100"><div class="card-body text-center py-2"><div class="stat-value">{{ global_metrics.pending_review_units }}</div><div class="small text-muted">Pending Review</div></div></div></div>
+</div>
+
+<div class="detail-section mb-3 py-2">
+    <div class="row g-2 text-center small">
+        <div class="col-md-3"><strong>Imported today:</strong> {{ global_metrics.imported_today }}</div>
+        <div class="col-md-3"><strong>Approved today:</strong> {{ global_metrics.approved_today }}</div>
+        <div class="col-md-3"><strong>Pending review:</strong> {{ global_metrics.pending_review_units }}</div>
+        <div class="col-md-3"><strong>Approval ratio:</strong> {{ global_metrics.approval_ratio }}%</div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-6">
+        <div class="detail-section"><h2 class="h6 text-uppercase text-muted">Avg pipeline completion</h2><canvas id="pipelineChart" height="120"></canvas></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="detail-section"><h2 class="h6 text-uppercase text-muted">Sources by processing status</h2><canvas id="statusChart" height="120"></canvas></div>
+    </div>
+</div>
+
+<div class="detail-section mb-3">
+    <h2 class="h6 text-uppercase text-muted">Quick modes</h2>
+    <div class="d-flex flex-wrap gap-2">
+        {% for mode_key, mode_label in quick_modes %}
+        <a href="?{% if mode_key %}mode={{ mode_key }}{% endif %}" class="btn btn-sm {% if mode == mode_key %}btn-dark{% else %}btn-outline-dark{% endif %}">{{ mode_label }}</a>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="filter-bar mb-3">
+    <form method="get" class="row g-2 align-items-end">
+        {% if mode %}<input type="hidden" name="mode" value="{{ mode }}">{% endif %}
+        <div class="col-md-2"><label class="form-label">Search</label><input type="text" name="q" value="{{ query }}" class="form-control"></div>
+        <div class="col-md-2"><label class="form-label">Processing status</label>
+            <select name="processing_status" class="form-select">
+                <option value="">All</option>
+                {% for value, label in processing_statuses %}
+                <option value="{{ value }}" {% if filter_processing_status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2"><label class="form-label">Source type</label>
+            <select name="source_type" class="form-select">
+                <option value="">All</option>
+                {% for value, label in source_types %}
+                <option value="{{ value }}" {% if filter_source_type == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2"><label class="form-label">Domain</label>
+            <select name="primary_domain" class="form-select">
+                <option value="">All</option>
+                {% for d in domains %}
+                <option value="{{ d.pk }}" {% if filter_primary_domain == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-1"><label class="form-label">Priority</label>
+            <select name="priority" class="form-select">
+                <option value="">All</option>
+                {% for value, label in priorities %}
+                <option value="{{ value }}" {% if filter_priority == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-1"><label class="form-label">Status</label>
+            <select name="status" class="form-select">
+                <option value="">All</option>
+                {% for value, label in statuses %}
+                <option value="{{ value }}" {% if filter_status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2"><label class="form-label">Created from</label><input type="date" name="created_from" value="{{ filter_created_from }}" class="form-control"></div>
+        <div class="col-md-2"><label class="form-label">Created to</label><input type="date" name="created_to" value="{{ filter_created_to }}" class="form-control"></div>
+        <div class="col-md-2"><label class="form-label">Updated from</label><input type="date" name="updated_from" value="{{ filter_updated_from }}" class="form-control"></div>
+        <div class="col-md-2"><label class="form-label">Updated to</label><input type="date" name="updated_to" value="{{ filter_updated_to }}" class="form-control"></div>
+        <div class="col-md-1"><button type="submit" class="btn btn-primary w-100">Filter</button></div>
+    </form>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-6">
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Recent activity</h2>
+            <ul class="list-group list-group-flush small">
+                {% for event in recent_activity %}
+                <li class="list-group-item px-0 d-flex justify-content-between">
+                    <a href="{% url event.url_name pk=event.url_kwargs.pk %}">{{ event.message }}</a>
+                    <span class="text-muted">{{ event.at|date:"M d H:i" }}</span>
+                </li>
+                {% empty %}
+                <li class="list-group-item px-0 text-muted">No recent activity.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Failures — retry</h2>
+            <p class="small text-muted mb-2">Ingestion extraction failures</p>
+            <ul class="list-group list-group-flush small mb-3">
+                {% for job in failed_ingestion_jobs %}
+                <li class="list-group-item px-0 d-flex justify-content-between">
+                    <a href="{% url 'ai_extraction:ingestion_detail' job.pk %}">{{ job.source.title|truncatechars:40 }}</a>
+                    <a href="{% url 'ai_extraction:ingestion_detail' job.pk %}" class="btn btn-sm btn-outline-danger">Retry extract</a>
+                </li>
+                {% empty %}
+                <li class="list-group-item px-0 text-muted">No failed ingestion jobs.</li>
+                {% endfor %}
+            </ul>
+            <p class="small text-muted mb-2">Batch parse errors</p>
+            <ul class="list-group list-group-flush small">
+                {% for batch in failed_batches_global %}
+                <li class="list-group-item px-0 d-flex justify-content-between">
+                    <a href="{% url 'ai_extraction:batch_detail' batch.pk %}">{{ batch.title|truncatechars:40 }}</a>
+                    <a href="{% url 'ai_extraction:batch_detail' batch.pk %}" class="btn btn-sm btn-outline-warning">Review / re-parse</a>
+                </li>
+                {% empty %}
+                <li class="list-group-item px-0 text-muted">No batches with parse errors.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+{% for source in sources %}
+<div class="detail-section mb-3">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+        <div>
+            <h2 class="h6 mb-1"><a href="{% url 'library:source_detail' source.pk %}">{{ source.title }}</a></h2>
+            <span class="badge bg-secondary">{{ source.get_source_type_display }}</span>
+            {% with ps=source.processing.processing_status %}
+            <span class="badge {% if ps == 'complete' %}bg-success{% elif ps == 'failed' %}bg-danger{% elif ps == 'review_pending' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %}">
+                {{ source.processing.processing_status_label }}
+            </span>
+            {% endwith %}
+        </div>
+        <div class="btn-group btn-group-sm flex-wrap">
+            <a href="{% url 'ai_extraction:ingestion_create' %}?source={{ source.pk }}" class="btn btn-outline-primary">Ingestion</a>
+            <a href="{% url 'ai_extraction:chunk_list' %}?source={{ source.pk }}" class="btn btn-outline-secondary">Chunks</a>
+            <a href="{% url 'ai_extraction:batch_list' %}?source={{ source.pk }}" class="btn btn-outline-secondary">Batches</a>
+            <a href="{% url 'knowledge:review_queue' %}?source={{ source.pk }}" class="btn btn-outline-success">Review</a>
+        </div>
+    </div>
+    <div class="pipeline-row d-flex gap-1 flex-wrap mb-2">
+        {% for stage in source.processing_pipeline %}
+        <div class="text-center" style="min-width: 72px; flex: 1 1 72px;">
+            <div class="small text-muted text-truncate" title="{{ stage.label }}">{{ stage.label }}</div>
+            <div class="progress" style="height: 6px;">
+                <div class="progress-bar {% if stage.state == 'complete' %}bg-success{% elif stage.state == 'failed' %}bg-danger{% elif stage.state == 'in_progress' %}bg-warning{% else %}bg-secondary{% endif %}" style="width: {{ stage.pct }}%;"></div>
+            </div>
+            <span class="badge bg-light text-dark">{{ stage.pct }}%</span>
+        </div>
+        {% endfor %}
+    </div>
+    <div class="row small text-muted g-1">
+        <div class="col-md-1" title="Ingestion jobs">Ing: {{ source.processing.ingestion_jobs_count }}</div>
+        <div class="col-md-1" title="Extracted">Ext: {{ source.processing.ingestion_extracted_count }}</div>
+        <div class="col-md-1" title="Chunks">Chk: {{ source.processing.text_chunks_count }}</div>
+        <div class="col-md-1" title="Batches">Bat: {{ source.processing.extraction_batches_count }}</div>
+        <div class="col-md-1" title="Parsed">Par: {{ source.processing.parsed_batches_count }}</div>
+        <div class="col-md-1" title="Failed batches">Fail: {{ source.processing.failed_batches_count }}</div>
+        <div class="col-md-1" title="Candidates">Cand: {{ source.processing.candidate_count }}</div>
+        <div class="col-md-1" title="Knowledge units">KU: {{ source.processing.imported_knowledge_units_count }}</div>
+        <div class="col-md-1" title="Approved">Appr: {{ source.processing.approved_knowledge_units_count }}</div>
+        <div class="col-md-1" title="Pending review">Pend: {{ source.processing.pending_review_units_count }}</div>
+        <div class="col-md-1" title="Duplicates">Dup: {{ source.processing.duplicate_suspects_count }}</div>
+    </div>
+</div>
+{% empty %}
+<div class="alert alert-info">No sources match the current filters.</div>
+{% endfor %}
+
+{% include 'includes/pagination.html' %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const chartOpts = {responsive: true, plugins: {legend: {display: false}}};
+new Chart(document.getElementById('pipelineChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ pipeline_chart_labels_json|safe }},
+        datasets: [{data: {{ pipeline_chart_values_json|safe }}, backgroundColor: '#2c5282'}]
+    },
+    options: chartOpts
+});
+new Chart(document.getElementById('statusChart'), {
+    type: 'doughnut',
+    data: {
+        labels: {{ status_chart_labels_json|safe }},
+        datasets: [{data: {{ status_chart_values_json|safe }}, backgroundColor: ['#6c757d','#0d6efd','#ffc107','#198754','#dc3545','#20c997']}]
+    },
+    options: {responsive: true}
+});
+</script>
+{% endblock %}

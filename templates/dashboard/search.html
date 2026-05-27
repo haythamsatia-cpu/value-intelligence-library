@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}Search — Value Intelligence Library{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1 class="h3 mb-0">Search</h1>
+    <p class="text-muted mb-0">Keyword search across knowledge units</p>
+</div>
+<div class="filter-bar">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-7">
+            <label class="form-label">Keywords</label>
+            <input type="text" name="q" value="{{ query }}" class="form-control"
+                   placeholder="Search title, insight, practical use, keywords, approval notes...">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Order</label>
+            <select name="ordering" class="form-select">
+                <option value="-updated_at" {% if ordering == '-updated_at' %}selected{% endif %}>Recently updated</option>
+                <option value="-created_at" {% if ordering == '-created_at' %}selected{% endif %}>Recently created</option>
+                <option value="title" {% if ordering == 'title' %}selected{% endif %}>Title A-Z</option>
+                <option value="consulting_value" {% if ordering == 'consulting_value' %}selected{% endif %}>Consulting value</option>
+                <option value="teaching_value" {% if ordering == 'teaching_value' %}selected{% endif %}>Teaching value</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Search</button>
+        </div>
+        <div class="col-12">
+            <a href="?q={{ query|urlencode }}&ordering={{ ordering }}&view=table" class="btn btn-sm {% if view_mode == 'table' %}btn-dark{% else %}btn-outline-dark{% endif %}">Table</a>
+            <a href="?q={{ query|urlencode }}&ordering={{ ordering }}&view=cards" class="btn btn-sm {% if view_mode == 'cards' %}btn-dark{% else %}btn-outline-dark{% endif %}">Cards</a>
+        </div>
+    </form>
+</div>
+{% if query %}
+<p class="text-muted">{{ page_obj.paginator.count }} result(s) for &ldquo;{{ query }}&rdquo;</p>
+{% if view_mode == 'cards' %}
+<div class="row g-3">
+    {% for unit in results %}
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 mb-1"><a href="{% url 'knowledge:knowledgeunit_detail' unit.pk %}">{{ unit.title }}</a></h2>
+                <p class="small text-muted mb-2">{{ unit.domain.name }} · {{ unit.get_knowledge_type_display }}</p>
+                <p class="small mb-2">{{ unit.executive_insight|default:unit.detailed_explanation|truncatechars:160 }}</p>
+                <span class="badge bg-secondary">{{ unit.get_governance_status_display }}</span>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <p class="text-muted">No results found.</p>
+    {% endfor %}
+</div>
+{% else %}
+<div class="table-card">
+    <table class="table table-hover mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>Title</th>
+                <th>Domain</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for unit in results %}
+            <tr>
+                <td>{{ unit.title }}</td>
+                <td>{{ unit.domain.name }}</td>
+                <td>{{ unit.get_knowledge_type_display }}</td>
+                <td><span class="badge bg-secondary">{{ unit.get_review_status_display }}</span></td>
+                <td><a href="{% url 'knowledge:knowledgeunit_detail' unit.pk %}">View</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-muted py-4">No results found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% include 'includes/pagination.html' %}
+{% else %}
+<p class="text-muted">Enter a search term to find knowledge units.</p>
+{% endif %}
+{% endblock %}

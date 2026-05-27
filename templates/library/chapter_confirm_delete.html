@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Delete Chapter — Value Intelligence Library{% endblock %}
+{% block content %}
+<div class="detail-section">
+    <h1 class="h4">Delete Chapter</h1>
+    <p>Are you sure you want to delete <strong>{{ chapter.title }}</strong>?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a href="{% url 'library:chapter_detail' chapter.pk %}" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

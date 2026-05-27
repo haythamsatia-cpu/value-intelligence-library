@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}Delete Ingestion Job{% endblock %}
+{% block content %}
+<div class="detail-section">
+    <h1 class="h4">Delete ingestion job</h1>
+    <p>Delete ingestion for <strong>{{ job.source.title }}</strong>? Text chunks and links to batches will be removed. Extraction batches already created are kept.</p>
+    <form method="post">{% csrf_token %}
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a href="{% url 'ai_extraction:ingestion_detail' job.pk %}" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

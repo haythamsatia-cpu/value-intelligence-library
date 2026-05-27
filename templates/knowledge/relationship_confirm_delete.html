@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Delete Relationship — Value Intelligence Library{% endblock %}
+{% block content %}
+<div class="detail-section">
+    <h1 class="h4">Delete Relationship</h1>
+    <p>Remove the link from <strong>{{ relationship.from_knowledge_unit.title }}</strong>
+       ({{ relationship.get_relationship_type_display }})
+       to <strong>{{ relationship.to_knowledge_unit.title }}</strong>?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a href="{% url 'knowledge:relationship_detail' relationship.pk %}" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}AI Extraction — Value Intelligence Library{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h1 class="h3 mb-0">AI Extraction</h1>
+        <p class="text-muted mb-0">Manual Claude workflow — copy prompts, paste outputs, import candidates</p>
+    </div>
+    <a href="{% url 'ai_extraction:batch_create' %}" class="btn btn-primary">New Extraction Batch</a>
+</div>
+<div class="alert alert-info">
+    No data is sent to external APIs. Copy prompt + JSON instructions to Claude, paste the response, then use <strong>Parse AI output</strong> on the batch to create candidates automatically.
+</div>
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card h-100"><div class="card-body text-center">
+            <div class="stat-value">{{ total_batches }}</div>
+            <div class="text-muted small">Batches</div>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card h-100"><div class="card-body text-center">
+            <div class="stat-value">{{ pending_candidates }}</div>
+            <div class="text-muted small">Pending Candidates</div>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card h-100"><div class="card-body text-center">
+            <div class="stat-value">{{ imported_candidates }}</div>
+            <div class="text-muted small">Imported</div>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card h-100"><div class="card-body text-center">
+            <div class="stat-value">{{ active_templates }}</div>
+            <div class="text-muted small">Active Templates</div>
+        </div></div>
+    </div>
+</div>
+<div class="detail-section">
+    <h2 class="h6 text-uppercase text-muted">Recent batches</h2>
+    <ul class="list-group list-group-flush">
+        {% for batch in recent_batches %}
+        <li class="list-group-item px-0 d-flex justify-content-between">
+            <a href="{% url 'ai_extraction:batch_detail' batch.pk %}">{{ batch.title }}</a>
+            <span class="badge bg-secondary">{{ batch.get_status_display }}</span>
+        </li>
+        {% empty %}
+        <li class="list-group-item px-0 text-muted">No extraction batches yet.</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

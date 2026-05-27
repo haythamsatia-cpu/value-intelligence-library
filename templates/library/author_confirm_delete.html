@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Delete Author — Value Intelligence Library{% endblock %}
+{% block content %}
+<div class="detail-section">
+    <h1 class="h4">Delete Author</h1>
+    <p>Are you sure you want to delete <strong>{{ author.name }}</strong>? Sources will keep their other authors; this author will be unlinked.</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a href="{% url 'library:author_detail' author.pk %}" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

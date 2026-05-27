@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Prompt Templates — AI Extraction{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h1 class="h3 mb-0">Prompt Templates</h1>
+        <p class="text-muted mb-0"><a href="{% url 'ai_extraction:dashboard' %}">← AI Extraction</a></p>
+    </div>
+    <a href="{% url 'ai_extraction:prompt_create' %}" class="btn btn-primary">Add Template</a>
+</div>
+<div class="table-card">
+    <table class="table table-hover mb-0">
+        <thead class="table-light">
+            <tr><th>Name</th><th>Domain</th><th>Active</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for template in templates %}
+            <tr>
+                <td><a href="{% url 'ai_extraction:prompt_detail' template.pk %}">{{ template.name }}</a></td>
+                <td>{{ template.source_domain|default:"—" }}</td>
+                <td>{% if template.is_active %}Yes{% else %}No{% endif %}</td>
+                <td><a href="{% url 'ai_extraction:prompt_update' template.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center text-muted py-4">No templates. Run <code>seed_prompt_templates</code> or create one.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% include 'includes/pagination.html' %}
+{% endblock %}

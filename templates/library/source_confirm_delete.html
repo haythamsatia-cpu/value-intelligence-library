@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Delete Source — Value Intelligence Library{% endblock %}
+{% block content %}
+<div class="detail-section">
+    <h1 class="h4">Delete Source</h1>
+    <p>Are you sure you want to delete <strong>{{ source.title }}</strong>? This will also remove associated chapters.</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a href="{% url 'library:source_detail' source.pk %}" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

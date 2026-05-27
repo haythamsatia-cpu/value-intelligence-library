@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}{{ template.name }} — Prompt Template{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div>
+        <h1 class="h3 mb-1">{{ template.name }}</h1>
+        <p class="text-muted mb-0">{{ template.description|default:"No description" }}</p>
+    </div>
+    <div class="btn-group">
+        <a href="{% url 'ai_extraction:prompt_update' template.pk %}" class="btn btn-outline-primary">Edit</a>
+        <a href="{% url 'ai_extraction:prompt_delete' template.pk %}" class="btn btn-outline-danger">Delete</a>
+    </div>
+</div>
+<div class="detail-section">
+    <dl class="row mb-0">
+        <dt class="col-sm-3">Domain hint</dt>
+        <dd class="col-sm-9">{{ template.source_domain|default:"—" }}</dd>
+        <dt class="col-sm-3">Active</dt>
+        <dd class="col-sm-9">{% if template.is_active %}Yes{% else %}No{% endif %}</dd>
+    </dl>
+</div>
+<div class="detail-section">
+    <h2 class="h6 text-uppercase text-muted">Prompt text</h2>
+    <pre class="bg-light p-3 rounded small mb-0" style="white-space: pre-wrap;">{{ template.prompt_text }}</pre>
+</div>
+{% if template.output_format_notes %}
+<div class="detail-section">
+    <h2 class="h6 text-uppercase text-muted">Output format notes</h2>
+    <pre class="bg-light p-3 rounded small mb-0" style="white-space: pre-wrap;">{{ template.output_format_notes }}</pre>
+</div>
+{% endif %}
+{% endblock %}

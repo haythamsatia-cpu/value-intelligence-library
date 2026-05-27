@@ -1,0 +1,61 @@
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Django / local data
+*.sqlite3
+db.sqlite3
+staticfiles/
+
+# User uploads and generated staging (never commit libraries or scans)
+media/*
+!media/.gitkeep
+backups/*
+!backups/.gitkeep
+bulk_import_staging/
+
+# Logs and temp files
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*~
+
+# IDE / OS
+.idea/
+.vscode/
+*.sublime-*
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Coverage / test artifacts
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# Large local document libraries (safety — do not track book/PDF folders in repo root)
+*.pdf
+*.PDF

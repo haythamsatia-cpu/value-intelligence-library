@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}Prompt Sandbox — Value Intelligence Library{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-0">Prompt Sandbox</h1>
+        <p class="text-muted mb-0">Preview generated prompts and expected extraction behavior — no AI API call</p>
+    </div>
+    <a href="{% url 'ai_extraction:prompt_list' %}" class="btn btn-outline-secondary">Prompt templates</a>
+</div>
+
+{% include 'ai_extraction/includes/extraction_guidance.html' %}
+
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Configure preview</h2>
+            <form method="get">
+                <input type="hidden" name="preview" value="1">
+                {{ form.prompt_template.label_tag }}
+                {{ form.prompt_template }}
+                <div class="mt-2">{{ form.quality_profile.label_tag }}{{ form.quality_profile }}</div>
+                <div class="mt-2">{{ form.source.label_tag }}{{ form.source }}</div>
+                <div class="mt-2">{{ form.sample_text.label_tag }}{{ form.sample_text }}</div>
+                <button type="submit" class="btn btn-primary mt-3">Preview final prompt</button>
+            </form>
+            <p class="form-text mt-2">Quality profiles: Fast Capture, Balanced, Consultant Grade, Course Creation, Deep Technical Analysis.</p>
+        </div>
+        {% if behavior_estimate %}
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Expected behavior</h2>
+            <ul class="small mb-0">
+                {% for line in behavior_estimate %}
+                <li>{{ line }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+    <div class="col-lg-7">
+        {% if built_prompt %}
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Final generated prompt</h2>
+            {% if built_prompt.profile_name %}<p class="small text-muted">Profile: {{ built_prompt.profile_name }}</p>{% endif %}
+            <textarea class="form-control font-monospace small" rows="18" readonly>{{ built_prompt.full_prompt }}</textarea>
+        </div>
+        <details class="detail-section">
+            <summary class="h6 text-uppercase text-muted">Applied extraction rules ({{ built_prompt.applied_rules|length }})</summary>
+            <ul class="small mt-2 mb-0">
+                {% for rule in built_prompt.applied_rules %}
+                <li>{{ rule }}</li>
+                {% endfor %}
+            </ul>
+        </details>
+        <details class="detail-section">
+            <summary class="h6 text-uppercase text-muted">Expected JSON schema</summary>
+            <pre class="bg-light p-3 rounded small mt-2 mb-0" style="white-space: pre-wrap;">{{ built_prompt.json_schema }}</pre>
+        </details>
+        {% else %}
+        <div class="alert alert-info">Select a template, paste sample text, and click <strong>Preview final prompt</strong>.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

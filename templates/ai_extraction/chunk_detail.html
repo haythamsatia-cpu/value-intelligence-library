@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}{{ chunk.title }} — Text Chunk{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-1">{{ chunk.title }}</h1>
+        <p class="text-muted mb-0">
+            Chunk {{ chunk.chunk_number }}
+            · <a href="{% url 'ai_extraction:ingestion_detail' chunk.ingestion_job.pk %}">Ingestion job</a>
+            · <a href="{% url 'library:source_detail' chunk.source.pk %}">{{ chunk.source.title }}</a>
+        </p>
+    </div>
+    {% if chunk.created_batch %}
+    <a href="{% url 'ai_extraction:batch_detail' chunk.created_batch.pk %}" class="btn btn-success">Open extraction batch</a>
+    {% endif %}
+</div>
+<div class="row">
+    <div class="col-lg-4">
+        <div class="detail-section">
+            <dl class="row mb-0 small">
+                <dt class="col-5">Pages</dt>
+                <dd class="col-7">{% if chunk.start_page %}{{ chunk.start_page }}–{{ chunk.end_page|default:"?" }}{% else %}—{% endif %}</dd>
+                <dt class="col-5">Characters</dt>
+                <dd class="col-7">{{ chunk.text|length }}</dd>
+                <dt class="col-5">Chapter</dt>
+                <dd class="col-7">{{ chunk.chapter|default:"—" }}</dd>
+            </dl>
+        </div>
+        {% if not chunk.created_batch %}
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Create extraction batch</h2>
+            <form method="post" action="{% url 'ai_extraction:chunk_create_batch' chunk.pk %}">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">Prompt template</label>
+                    {{ batch_form.prompt_template }}
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Create Extraction Batch</button>
+            </form>
+            <p class="form-text mb-0">Batch will be created with status Ready for AI.</p>
+        </div>
+        {% endif %}
+    </div>
+    <div class="col-lg-8">
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Chunk text</h2>
+            <pre class="bg-light p-3 rounded small mb-0" style="max-height: 480px; overflow: auto; white-space: pre-wrap;">{{ chunk.text }}</pre>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% block title %}Review Queue — Value Intelligence Library{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h1 class="h3 mb-0">Review Queue</h1>
+        <p class="text-muted mb-0">Fast governance workflow for AI-extracted and pending knowledge units</p>
+    </div>
+    <a href="{% url 'knowledge:knowledgeunit_list' %}" class="btn btn-outline-secondary">All Knowledge Units</a>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center"><div class="stat-value">{{ metrics.total }}</div><div class="small text-muted">Total Units</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center"><div class="stat-value">{{ metrics.approved }}</div><div class="small text-muted">Approved</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center"><div class="stat-value">{{ metrics.pending }}</div><div class="small text-muted">Pending Review</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center"><div class="stat-value">{{ metrics.duplicates }}</div><div class="small text-muted">Duplicate Suspects</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center"><div class="stat-value">{{ metrics.imported_this_week }}</div><div class="small text-muted">Imported This Week</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center"><div class="stat-value">{{ metrics.fast_imported }}</div><div class="small text-muted">Fast Imported</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center"><div class="stat-value">{{ metrics.candidate_reviewed }}</div><div class="small text-muted">Candidate Reviewed</div></div></div></div>
+</div>
+
+<div class="detail-section mb-3">
+    <h2 class="h6 text-uppercase text-muted">Review Modes</h2>
+    <div class="d-flex flex-wrap gap-2">
+        {% for mode_key, mode_label in saved_modes %}
+        <a class="btn btn-sm {% if mode == mode_key %}btn-dark{% else %}btn-outline-dark{% endif %}" href="?mode={{ mode_key }}">{{ mode_label }}</a>
+        {% endfor %}
+        <a class="btn btn-sm btn-outline-warning" href="?mode=uncategorized">Uncategorized only</a>
+        <a class="btn btn-sm btn-outline-secondary" href="?mode=pending_review&amp;domain={{ uncategorized_domain.pk }}">Pending + Uncategorized</a>
+    </div>
+</div>
+
+<div class="filter-bar">
+    <form method="get" class="row g-2 align-items-end">
+        <input type="hidden" name="mode" value="{{ mode }}">
+        <div class="col-md-2"><label class="form-label">Search</label><input type="text" name="q" value="{{ query }}" class="form-control"></div>
+        <div class="col-md-2"><label class="form-label">Source</label><select name="source" class="form-select"><option value="">All</option>{% for s in sources %}<option value="{{ s.pk }}" {% if filter_source == s.pk|stringformat:"s" %}selected{% endif %}>{{ s.title|truncatechars:22 }}</option>{% endfor %}</select></div>
+        <div class="col-md-2"><label class="form-label">Domain</label><select name="domain" class="form-select"><option value="">All</option>{% for d in domains %}<option value="{{ d.pk }}" {% if filter_domain == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>{% endfor %}</select></div>
+        <div class="col-md-2"><label class="form-label">Governance</label><select name="governance_status" class="form-select"><option value="">All</option>{% for value, label in governance_statuses %}<option value="{{ value }}" {% if filter_governance_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="col-md-2"><label class="form-label">Confidence</label><select name="confidence_level" class="form-select"><option value="">All</option>{% for value, label in value_levels %}<option value="{{ value }}" {% if filter_confidence_level == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="col-md-2"><label class="form-label">Source quality</label><select name="source_quality" class="form-select"><option value="">All</option>{% for value, label in value_levels %}<option value="{{ value }}" {% if filter_source_quality == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="col-md-2"><label class="form-label">Consulting</label><select name="consulting_value" class="form-select"><option value="">All</option>{% for value, label in value_levels %}<option value="{{ value }}" {% if filter_consulting_value == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="col-md-2"><label class="form-label">Teaching</label><select name="teaching_value" class="form-select"><option value="">All</option>{% for value, label in value_levels %}<option value="{{ value }}" {% if filter_teaching_value == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="col-md-2"><label class="form-label">Duplicate</label><select name="duplicate" class="form-select"><option value="">All</option><option value="yes" {% if filter_duplicate == 'yes' %}selected{% endif %}>Yes</option><option value="no" {% if filter_duplicate == 'no' %}selected{% endif %}>No</option></select></div>
+        <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">Apply</button></div>
+    </form>
+</div>
+
+<form method="post" action="{% url 'knowledge:knowledgeunit_bulk_action' %}">
+    {% csrf_token %}
+    <input type="hidden" name="next_url" value="{{ request.get_full_path }}">
+    <div class="d-flex flex-wrap gap-2 mb-2">
+        <select name="bulk_action" class="form-select" style="max-width: 260px;">
+            <option value="">Bulk action...</option>
+            <option value="bulk_approve">Approve</option>
+            <option value="bulk_archive">Archive</option>
+            <option value="bulk_set_reviewed">Set reviewed</option>
+            <option value="bulk_change_domain">Change domain</option>
+            <option value="bulk_assign_tags">Assign tags</option>
+            <option value="bulk_set_consulting">Set consulting value</option>
+            <option value="bulk_set_teaching">Set teaching value</option>
+            <option value="bulk_set_confidence">Set confidence level</option>
+            <option value="bulk_mark_duplicate">Mark duplicate</option>
+            <option value="bulk_unmark_duplicate">Unmark duplicate</option>
+        </select>
+        <select name="bulk_domain" class="form-select" style="max-width: 180px;"><option value="">Domain...</option>{% for d in domains %}<option value="{{ d.pk }}">{{ d.name }}</option>{% endfor %}</select>
+        <select name="bulk_consulting_value" class="form-select" style="max-width: 180px;"><option value="">Consulting...</option>{% for value, label in value_levels %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select>
+        <select name="bulk_teaching_value" class="form-select" style="max-width: 180px;"><option value="">Teaching...</option>{% for value, label in value_levels %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select>
+        <select name="bulk_confidence_level" class="form-select" style="max-width: 180px;"><option value="">Confidence...</option>{% for value, label in value_levels %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select>
+        <select name="bulk_tags" multiple class="form-select" style="max-width: 240px; min-height: 38px;">{% for tag in all_tags %}<option value="{{ tag.pk }}">{{ tag.name }}</option>{% endfor %}</select>
+        <button type="submit" class="btn btn-success">Apply</button>
+    </div>
+
+    <div class="table-card">
+        <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th><input type="checkbox" id="select-all"></th>
+                    <th>Title</th>
+                    <th>Domain</th>
+                    <th>Gov.</th>
+                    <th>Conf.</th>
+                    <th>Consulting</th>
+                    <th>Teaching</th>
+                    <th>Duplicate</th>
+                    <th>Quick Review</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for unit in knowledge_units %}
+                <tr>
+                    <td><input type="checkbox" class="row-checkbox" name="unit_ids" value="{{ unit.pk }}"></td>
+                    <td>
+                        <a href="{% url 'knowledge:knowledgeunit_detail' unit.pk %}">{{ unit.title|truncatechars:48 }}</a>
+                        <details class="small mt-1">
+                            <summary class="text-muted">Preview</summary>
+                            {{ unit.executive_insight|default:unit.detailed_explanation|truncatechars:220 }}
+                        </details>
+                    </td>
+                    <td>{{ unit.domain|default:"—" }}</td>
+                    <td><span class="badge bg-secondary">{{ unit.get_governance_status_display }}</span></td>
+                    <td>
+                        <form method="post" action="{% url 'knowledge:knowledgeunit_quick_action' unit.pk %}" class="d-flex gap-1">
+                            {% csrf_token %}
+                            <input type="hidden" name="next_url" value="{{ request.get_full_path }}">
+                            <select name="action" class="form-select form-select-sm">
+                                <option value="mark_reviewed">Reviewed</option>
+                                <option value="approve">Approve</option>
+                                <option value="archive">Archive</option>
+                                <option value="mark_duplicate">Duplicate</option>
+                                <option value="restore_duplicate">Restore</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-primary">Go</button>
+                        </form>
+                        <form method="post" action="{% url 'knowledge:knowledgeunit_quick_action' unit.pk %}" class="d-flex gap-1 mt-1">
+                            {% csrf_token %}
+                            <input type="hidden" name="next_url" value="{{ request.get_full_path }}">
+                            <input type="hidden" name="action" value="quick_update">
+                            <select name="confidence_level" class="form-select form-select-sm">
+                                {% for value, label in value_levels %}
+                                <option value="{{ value }}" {% if unit.confidence_level == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            <select name="tag_id" class="form-select form-select-sm">
+                                <option value="">Tag...</option>
+                                {% for tag in all_tags %}
+                                <option value="{{ tag.pk }}">{{ tag.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <button class="btn btn-sm btn-outline-secondary">Save</button>
+                        </form>
+                    </td>
+                    <td>{{ unit.get_consulting_value_display }}</td>
+                    <td>{{ unit.get_teaching_value_display }}</td>
+                    <td>{% if unit.is_duplicate %}<span class="badge bg-warning text-dark">Suspect</span>{% endif %}</td>
+                    <td class="small">
+                        {% if unit.is_duplicate or unit.has_possible_duplicates %}<span class="text-warning">Possible duplicate</span>{% endif %}
+                        {% if unit.review_status == 'ai_extracted' %}<span class="badge bg-info text-dark">AI Extracted</span>{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="9" class="text-center text-muted py-4">No records in review queue.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</form>
+
+{% include 'includes/pagination.html' %}
+
+<div class="row g-3 mt-2">
+    <div class="col-lg-4"><div class="detail-section"><h2 class="h6 text-uppercase text-muted">Units by Domain</h2><canvas id="domainChart" height="150"></canvas></div></div>
+    <div class="col-lg-4"><div class="detail-section"><h2 class="h6 text-uppercase text-muted">By Governance Status</h2><canvas id="statusChart" height="150"></canvas></div></div>
+    <div class="col-lg-4"><div class="detail-section"><h2 class="h6 text-uppercase text-muted">By Consulting Value</h2><canvas id="valueChart" height="150"></canvas></div></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.getElementById('select-all')?.addEventListener('change', function () {
+  document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = this.checked);
+});
+const chartOpts = {responsive:true, plugins:{legend:{display:false}}};
+new Chart(document.getElementById('domainChart'), {type:'bar', data:{labels: {{ domain_chart_labels_json|safe }}, datasets:[{data: {{ domain_chart_values_json|safe }}, backgroundColor:'#2c5282'}]}, options: chartOpts});
+new Chart(document.getElementById('statusChart'), {type:'bar', data:{labels: {{ status_chart_labels_json|safe }}, datasets:[{data: {{ status_chart_values_json|safe }}, backgroundColor:'#1e3a5f'}]}, options: chartOpts});
+new Chart(document.getElementById('valueChart'), {type:'bar', data:{labels: {{ value_chart_labels_json|safe }}, datasets:[{data: {{ value_chart_values_json|safe }}, backgroundColor:'#4a5568'}]}, options: chartOpts});
+</script>
+{% endblock %}

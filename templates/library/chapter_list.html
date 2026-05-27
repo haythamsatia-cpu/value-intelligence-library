@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Chapters — Value Intelligence Library{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h1 class="h3 mb-0">Chapter Manager</h1>
+        <p class="text-muted mb-0">Chapters linked to sources</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'library:chapter_export_csv' %}?source={{ filter_source }}&extraction_status={{ filter_status }}" class="btn btn-outline-secondary">Export CSV</a>
+        <a href="{% url 'library:chapter_create' %}" class="btn btn-primary">Add Chapter</a>
+    </div>
+</div>
+<div class="filter-bar">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-5">
+            <label class="form-label">Source</label>
+            <select name="source" class="form-select">
+                <option value="">All sources</option>
+                {% for s in sources %}
+                <option value="{{ s.pk }}" {% if filter_source == s.pk|stringformat:"s" %}selected{% endif %}>{{ s.title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-5">
+            <label class="form-label">Extraction status</label>
+            <select name="extraction_status" class="form-select">
+                <option value="">All statuses</option>
+                {% for value, label in extraction_statuses %}
+                <option value="{{ value }}" {% if filter_status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Filter</button>
+        </div>
+    </form>
+</div>
+<div class="table-card">
+    <table class="table table-hover mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>Source</th>
+                <th>#</th>
+                <th>Title</th>
+                <th>Pages</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for chapter in chapters %}
+            <tr>
+                <td>{{ chapter.source.title }}</td>
+                <td>{{ chapter.chapter_number|default:"—" }}</td>
+                <td><a href="{% url 'library:chapter_detail' chapter.pk %}">{{ chapter.title }}</a></td>
+                <td>{% if chapter.start_page %}{{ chapter.start_page }}–{{ chapter.end_page|default:"?" }}{% else %}—{% endif %}</td>
+                <td><span class="badge bg-secondary">{{ chapter.get_extraction_status_display }}</span></td>
+                <td><a href="{% url 'library:chapter_update' chapter.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-4">No chapters found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% include 'includes/pagination.html' %}
+{% endblock %}

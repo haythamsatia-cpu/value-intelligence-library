@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}{{ chapter.title }} — Value Intelligence Library{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div>
+        <h1 class="h3 mb-1">{{ chapter.title }}</h1>
+        <p class="text-muted mb-0">
+            <a href="{% url 'library:source_detail' chapter.source.pk %}">{{ chapter.source.title }}</a>
+            · {{ chapter.get_extraction_status_display }}
+        </p>
+    </div>
+    <div class="btn-group">
+        <a href="{% url 'ai_extraction:batch_create' %}?chapter={{ chapter.pk }}&source={{ chapter.source.pk }}" class="btn btn-outline-secondary">AI Extraction Batch</a>
+        <a href="{% url 'library:chapter_update' chapter.pk %}" class="btn btn-outline-primary">Edit</a>
+        <a href="{% url 'library:chapter_delete' chapter.pk %}" class="btn btn-outline-danger">Delete</a>
+    </div>
+</div>
+<div class="detail-section">
+    <dl class="row mb-0">
+        <dt class="col-sm-3">Chapter number</dt>
+        <dd class="col-sm-9">{{ chapter.chapter_number|default:"—" }}</dd>
+        <dt class="col-sm-3">Pages</dt>
+        <dd class="col-sm-9">{% if chapter.start_page %}{{ chapter.start_page }}–{{ chapter.end_page|default:"?" }}{% else %}—{% endif %}</dd>
+    </dl>
+</div>
+{% if chapter.summary %}
+<div class="detail-section">
+    <h2 class="h6 text-uppercase text-muted">Summary</h2>
+    <p class="mb-0">{{ chapter.summary|linebreaks }}</p>
+</div>
+{% endif %}
+{% if chapter.notes %}
+<div class="detail-section">
+    <h2 class="h6 text-uppercase text-muted">Notes</h2>
+    <p class="mb-0">{{ chapter.notes|linebreaks }}</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% block title %}{{ source.title }} — Value Intelligence Library{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-1">{{ source.title }}</h1>
+        <p class="text-muted mb-0">
+            {{ source.get_source_type_display }} · {{ source.get_status_display }}
+            {% if processing.processing_status %}
+            · <span class="badge {% if processing.processing_status == 'complete' %}bg-success{% elif processing.processing_status == 'failed' %}bg-danger{% else %}bg-info text-dark{% endif %}">{{ processing.processing_status_label }}</span>
+            {% endif %}
+        </p>
+        {% if readiness.labels %}
+        <p class="mb-0 mt-1">
+            {% for key, label, color in readiness.labels %}
+            <span class="badge bg-{{ color }} {% if color == 'light' %}text-dark{% endif %}">{{ label }}</span>
+            {% endfor %}
+        </p>
+        {% endif %}
+    </div>
+    <div class="btn-group flex-wrap">
+        <a href="{% url 'library:processing_center' %}?q={{ source.title|urlencode }}" class="btn btn-outline-secondary">Processing Center</a>
+        <a href="{% url 'ai_extraction:ingestion_create' %}?source={{ source.pk }}" class="btn btn-outline-primary">Create Ingestion Job</a>
+        <a href="{% url 'ai_extraction:chunk_list' %}?source={{ source.pk }}" class="btn btn-outline-secondary">View Chunks</a>
+        <a href="{% url 'ai_extraction:batch_list' %}?source={{ source.pk }}" class="btn btn-outline-secondary">View Batches</a>
+        <a href="{% url 'ai_extraction:candidate_list' %}?source={{ source.pk }}" class="btn btn-outline-secondary">View Candidates</a>
+        <a href="{% url 'knowledge:knowledgeunit_list' %}?source={{ source.pk }}" class="btn btn-outline-secondary">Imported Knowledge</a>
+        <a href="{% url 'knowledge:review_queue' %}?source={{ source.pk }}" class="btn btn-outline-success">Review Queue</a>
+        <a href="{% url 'library:source_update' source.pk }}" class="btn btn-outline-primary">Edit</a>
+        <a href="{% url 'library:source_delete' source.pk }}" class="btn btn-outline-danger">Delete</a>
+    </div>
+</div>
+
+{% if processing_pipeline %}
+<div class="detail-section mb-3">
+    <h2 class="h6 text-uppercase text-muted">Pipeline progress</h2>
+    <div class="d-flex gap-1 flex-wrap">
+        {% for stage in processing_pipeline %}
+        <div class="text-center" style="min-width: 80px; flex: 1 1 80px;">
+            <div class="small text-muted">{{ stage.label }}</div>
+            <div class="progress" style="height: 8px;">
+                <div class="progress-bar {% if stage.state == 'complete' %}bg-success{% elif stage.state == 'failed' %}bg-danger{% elif stage.state == 'in_progress' %}bg-warning{% else %}bg-secondary{% endif %}" style="width: {{ stage.pct }}%;"></div>
+            </div>
+            <span class="badge bg-light text-dark">{{ stage.pct }}%</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<div class="row g-3 mb-3">
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center py-2"><div class="stat-value">{{ processing.ingestion_jobs_count }}</div><div class="small text-muted">Ingestion jobs</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center py-2"><div class="stat-value">{{ processing.text_chunks_count }}</div><div class="small text-muted">Chunks</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center py-2"><div class="stat-value">{{ processing.extraction_batches_count }}</div><div class="small text-muted">Batches</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center py-2"><div class="stat-value">{{ processing.parsed_batches_count }}</div><div class="small text-muted">Parsed</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center py-2"><div class="stat-value">{{ processing.imported_knowledge_units_count }}</div><div class="small text-muted">Knowledge units</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center py-2"><div class="stat-value">{{ processing.pending_review_units_count }}</div><div class="small text-muted">Pending review</div></div></div></div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Details</h2>
+            <dl class="row mb-0">
+                <dt class="col-sm-4">Authors</dt>
+                <dd class="col-sm-8">{% for a in source.authors.all %}{{ a.name }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</dd>
+                <dt class="col-sm-4">Year / Edition</dt>
+                <dd class="col-sm-8">{{ source.year|default:"—" }} / {{ source.edition|default:"—" }}</dd>
+                <dt class="col-sm-4">ISBN</dt>
+                <dd class="col-sm-8">{{ source.isbn|default:"—" }}</dd>
+                <dt class="col-sm-4">Publisher</dt>
+                <dd class="col-sm-8">{{ source.publisher|default:"—" }}</dd>
+                <dt class="col-sm-4">Pages</dt>
+                <dd class="col-sm-8">{{ source.total_pages|default:"—" }}</dd>
+                <dt class="col-sm-4">Domain</dt>
+                <dd class="col-sm-8">{{ source.primary_domain|default:"—" }}</dd>
+                <dt class="col-sm-4">Priority</dt>
+                <dd class="col-sm-8">{{ source.get_priority_display }}</dd>
+                {% if source.subtitle %}
+                <dt class="col-sm-4">Subtitle</dt>
+                <dd class="col-sm-8">{{ source.subtitle }}</dd>
+                {% endif %}
+                {% if source.tags.exists %}
+                <dt class="col-sm-4">Tags</dt>
+                <dd class="col-sm-8">{% for t in source.tags.all %}<span class="badge bg-light text-dark">{{ t.name }}</span> {% endfor %}</dd>
+                {% endif %}
+                {% if source.original_file_path %}
+                <dt class="col-sm-4">Original path</dt>
+                <dd class="col-sm-8"><code class="small">{{ source.original_file_path }}</code></dd>
+                {% endif %}
+                {% if source.source_extension or source.source_file_size %}
+                <dt class="col-sm-4">Library file</dt>
+                <dd class="col-sm-8">
+                    {% if source.source_extension %}<span class="badge bg-light text-dark">{{ source.source_extension }}</span>{% endif %}
+                    {% if source.source_file_size %}{{ source.source_file_size|filesizeformat }}{% endif %}
+                </dd>
+                {% endif %}
+                {% if source.file %}
+                <dt class="col-sm-4">Legacy file</dt>
+                <dd class="col-sm-8"><a href="{{ source.file.url }}" target="_blank">Download</a></dd>
+                {% endif %}
+                {% if source.source_file %}
+                <dt class="col-sm-4">Uploaded copy</dt>
+                <dd class="col-sm-8"><a href="{{ source.source_file.url }}" target="_blank">Download</a></dd>
+                {% endif %}
+            </dl>
+        </div>
+        {% if source.notes %}
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Notes</h2>
+            <p class="mb-0">{{ source.notes|linebreaks }}</p>
+        </div>
+        {% endif %}
+
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Governance metrics</h2>
+            <dl class="row mb-0 small">
+                <dt class="col-6">Imported units</dt><dd class="col-6">{{ processing.imported_knowledge_units_count }}</dd>
+                <dt class="col-6">Approved</dt><dd class="col-6">{{ processing.approved_knowledge_units_count }}</dd>
+                <dt class="col-6">Pending review</dt><dd class="col-6">{{ processing.pending_review_units_count }}</dd>
+                <dt class="col-6">Duplicate suspects</dt><dd class="col-6">{{ processing.duplicate_suspects_count }}</dd>
+                <dt class="col-6">Candidates</dt><dd class="col-6">{{ processing.candidate_count }}</dd>
+            </dl>
+        </div>
+
+        {% if failed_ingestion_jobs or failed_batches %}
+        <div class="detail-section border-warning">
+            <h2 class="h6 text-uppercase text-muted">Failures</h2>
+            {% for job in failed_ingestion_jobs %}
+            <div class="d-flex justify-content-between small mb-2">
+                <span>Ingestion failed — {{ job.updated_at|date:"Y-m-d" }}</span>
+                <a href="{% url 'ai_extraction:ingestion_detail' job.pk %}" class="btn btn-sm btn-outline-danger">Retry extract</a>
+            </div>
+            {% endfor %}
+            {% for batch in failed_batches %}
+            <div class="d-flex justify-content-between small mb-2">
+                <a href="{% url 'ai_extraction:batch_detail' batch.pk %}">{{ batch.title|truncatechars:40 }}</a>
+                <a href="{% url 'ai_extraction:batch_detail' batch.pk %}" class="btn btn-sm btn-outline-warning">Re-parse</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-6">
+        <div class="detail-section">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h6 text-uppercase text-muted mb-0">Ingestion jobs</h2>
+                <a href="{% url 'ai_extraction:ingestion_create' %}?source={{ source.pk }}" class="btn btn-sm btn-outline-primary">Add</a>
+            </div>
+            <p class="small text-muted">{{ processing.ingestion_extracted_count }} / {{ processing.ingestion_jobs_count }} extracted</p>
+            <ul class="list-group list-group-flush">
+                {% for job in source.ingestion_jobs.all %}
+                <li class="list-group-item px-0 d-flex justify-content-between">
+                    <a href="{% url 'ai_extraction:ingestion_detail' job.pk %}">{{ job.get_extraction_method_display }} — {{ job.updated_at|date:"Y-m-d H:i" }}</a>
+                    <span class="badge {% if job.status == 'failed' %}bg-danger{% elif job.status == 'extracted' %}bg-success{% else %}bg-secondary{% endif %}">{{ job.get_status_display }}</span>
+                </li>
+                {% empty %}
+                <li class="list-group-item px-0 text-muted">No ingestion jobs yet.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Chunk &amp; batch metrics</h2>
+            <dl class="row mb-0 small">
+                <dt class="col-6">Text chunks</dt><dd class="col-6">{{ processing.text_chunks_count }} ({{ processing.chunks_with_batch_count }} with batch)</dd>
+                <dt class="col-6">Extraction batches</dt><dd class="col-6">{{ processing.extraction_batches_count }}</dd>
+                <dt class="col-6">With AI output</dt><dd class="col-6">{{ processing.batches_with_ai_output_count }}</dd>
+                <dt class="col-6">Parsed batches</dt><dd class="col-6">{{ processing.parsed_batches_count }}</dd>
+                <dt class="col-6">Failed parses</dt><dd class="col-6">{{ processing.failed_batches_count }}</dd>
+            </dl>
+        </div>
+
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Latest activity</h2>
+            <ul class="list-group list-group-flush small">
+                {% for event in recent_activity %}
+                <li class="list-group-item px-0 d-flex justify-content-between">
+                    <a href="{% url event.url_name pk=event.url_kwargs.pk %}">{{ event.message|truncatechars:55 }}</a>
+                    <span class="text-muted">{{ event.at|date:"M d H:i" }}</span>
+                </li>
+                {% empty %}
+                <li class="list-group-item px-0 text-muted">No activity yet.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Recent imports</h2>
+            <ul class="list-group list-group-flush">
+                {% for unit in recent_knowledge %}
+                <li class="list-group-item px-0 d-flex justify-content-between">
+                    <a href="{% url 'knowledge:knowledgeunit_detail' unit.pk %}">{{ unit.title|truncatechars:45 }}</a>
+                    <span class="badge bg-light text-dark">{{ unit.get_governance_status_display }}</span>
+                </li>
+                {% empty %}
+                <li class="list-group-item px-0 text-muted">No knowledge units linked to this source.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="detail-section">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h6 text-uppercase text-muted mb-0">Chapters</h2>
+                <a href="{% url 'library:chapter_create' %}?source={{ source.pk }}" class="btn btn-sm btn-outline-primary">Add Chapter</a>
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for chapter in source.chapters.all %}
+                <li class="list-group-item px-0 d-flex justify-content-between">
+                    <a href="{% url 'library:chapter_detail' chapter.pk %}">{{ chapter.chapter_number }} {{ chapter.title }}</a>
+                    <span class="badge bg-light text-dark">{{ chapter.get_extraction_status_display }}</span>
+                </li>
+                {% empty %}
+                <li class="list-group-item px-0 text-muted">No chapters recorded.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

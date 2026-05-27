@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% block title %}Bulk Import Preview — Value Intelligence Library{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-0">Import preview</h1>
+        <p class="text-muted mb-0">
+            {% if kind == 'folder' %}Folder scan{% else %}CSV{% endif %}
+            — {{ all_rows_count }} row(s)
+            {% if scan_root %} · <code class="small">{{ scan_root }}</code>{% endif %}
+        </p>
+    </div>
+    <a href="{% url 'library:bulk_import' %}" class="btn btn-outline-secondary">Back</a>
+</div>
+
+{% if missing_staging %}
+<div class="alert alert-warning">No preview data. <a href="{% url 'library:bulk_import' %}">Start a new import</a>.</div>
+{% else %}
+
+<div class="row g-2 mb-3">
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center py-2"><div class="stat-value">{{ stats.total }}</div><div class="small text-muted">Total</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center py-2"><div class="stat-value">{{ stats.duplicates }}</div><div class="small text-muted">Duplicates</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center py-2"><div class="stat-value">{{ stats.selected }}</div><div class="small text-muted">Ready</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center py-2"><div class="stat-value">{{ stats.unmatched_domains }}</div><div class="small text-muted">Uncategorized</div></div></div></div>
+</div>
+
+<form method="post" action="{% url 'library:bulk_import_bulk_edit' %}" id="bulk-edit-form" class="detail-section mb-3">
+    {% csrf_token %}
+    <h2 class="h6 text-uppercase text-muted">Bulk edit (checked rows on this page)</h2>
+    <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label">Domain</label>
+            <select name="bulk_domain" class="form-select">
+                <option value="">—</option>
+                {% for d in domains %}<option value="{{ d.pk }}">{{ d.name }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Priority</label>
+            <select name="bulk_priority" class="form-select">
+                <option value="">—</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Status</label>
+            <select name="bulk_status" class="form-select">
+                <option value="">—</option>
+                <option value="not_started">Not Started</option>
+                <option value="in_progress">In Progress</option>
+                <option value="completed">Completed</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Add tags (comma)</label>
+            <input type="text" name="bulk_tags" class="form-control" placeholder="library,claims">
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-outline-primary w-100">Apply</button>
+        </div>
+    </div>
+</form>
+
+<form method="post" action="{% url 'library:bulk_import_commit' %}" id="import-commit-form">
+    {% csrf_token %}
+    <div class="detail-section mb-2">
+        <h2 class="h6 text-uppercase text-muted">Import</h2>
+        <div class="row g-2 align-items-end">
+            <div class="col-md-4">{{ options_form.default_domain.label_tag }}{{ options_form.default_domain }}</div>
+            <div class="col-md-3">
+                <div class="form-check mt-4">{{ options_form.skip_duplicates }} {{ options_form.skip_duplicates.label_tag }}</div>
+            </div>
+            <div class="col-md-5 d-flex flex-wrap gap-2 justify-content-md-end">
+                <button type="submit" name="import_mode" value="all_non_duplicate" class="btn btn-success">
+                    Import all non-duplicates ({{ stats.selected }})
+                </button>
+                <button type="submit" name="import_mode" value="page_selected" class="btn btn-outline-success">
+                    Import checked on this page only
+                </button>
+            </div>
+        </div>
+        <p class="form-text mb-0">Large libraries: use “Import all non-duplicates” to import every ready row across all pages.</p>
+    </div>
+
+    <div class="table-card">
+        <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th><input type="checkbox" id="select-all" title="This page only"></th>
+                    <th>Title</th>
+                    <th>Author</th>
+                    <th>Type</th>
+                    <th>Ext</th>
+                    <th>Size</th>
+                    <th>Path / domain</th>
+                    <th>Flags</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in preview_rows %}
+                <tr class="{% if row.duplicate %}table-warning{% endif %}">
+                    <td>
+                        <input type="checkbox" class="row-check" name="import_row" value="{{ row.row_index }}"
+                               form="import-commit-form"
+                               {% if not row.duplicate %}checked{% endif %}>
+                    </td>
+                    <td>{{ row.title|truncatechars:45 }}</td>
+                    <td class="small">{{ row.authors|join:", "|default:"—" }}</td>
+                    <td class="small">{{ row.source_type }}</td>
+                    <td>{% if row.source_extension %}<span class="badge bg-light text-dark">{{ row.source_extension }}</span>{% else %}—{% endif %}</td>
+                    <td class="small">{% if row.file_size %}{{ row.file_size|filesizeformat }}{% else %}—{% endif %}</td>
+                    <td class="small text-muted">
+                        {% if row.original_file_path %}
+                        <span title="{{ row.original_file_path }}">{{ row.original_file_path|truncatechars:40 }}</span>
+                        {% elif row.domain_unmatched %}Uncategorized
+                        {% else %}{{ row.primary_domain_name|default:"—" }}{% endif %}
+                    </td>
+                    <td class="small">
+                        {% if row.duplicate %}<span class="badge bg-warning text-dark" title="{{ row.duplicate_reason }}">Dup</span>{% endif %}
+                        {% for w in row.warnings %}<span class="badge bg-secondary">{{ w|truncatechars:18 }}</span>{% endfor %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</form>
+
+<div class="d-flex justify-content-between mt-3">
+    {% if has_prev %}<a href="?page={{ prev_page }}" class="btn btn-sm btn-outline-secondary">Previous</a>{% else %}<span></span>{% endif %}
+    <span class="text-muted small">Page {{ page }} of {{ num_pages }}</span>
+    {% if has_next %}<a href="?page={{ next_page }}" class="btn btn-sm btn-outline-secondary">Next</a>{% endif %}
+</div>
+
+<script>
+document.getElementById('select-all')?.addEventListener('change', function () {
+    document.querySelectorAll('.row-check').forEach(function (cb) { cb.checked = this.checked; }.bind(this));
+});
+document.getElementById('bulk-edit-form')?.addEventListener('submit', function (e) {
+    this.querySelectorAll('input[name="row_index"]').forEach(function (el) { el.remove(); });
+    document.querySelectorAll('.row-check:checked').forEach(function (cb) {
+        var hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'row_index';
+        hidden.value = cb.value;
+        e.target.appendChild(hidden);
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

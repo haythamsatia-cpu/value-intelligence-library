@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% block title %}{{ batch.title }} — Extraction Batch{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-1">{{ batch.title }}</h1>
+        <p class="text-muted mb-0">
+            <span class="badge bg-secondary">{{ batch.get_status_display }}</span>
+            · {{ batch.prompt_template.name }}
+        </p>
+        <p class="mb-0 mt-1">
+            {% if batch.parse_ui_state == 'pending_parse' %}
+            <span class="badge bg-warning text-dark">Pending parse</span>
+            {% elif batch.parse_ui_state == 'parsed_success' %}
+            <span class="badge bg-success">Parsed successfully</span>
+            {% if batch.parsed_at %}<span class="small text-muted ms-1">{{ batch.parsed_at }}</span>{% endif %}
+            {% elif batch.parse_ui_state == 'parse_errors' %}
+            <span class="badge bg-danger">Parse errors</span>
+            {% if batch.parsed_at %}<span class="small text-muted ms-1">{{ batch.parsed_at }}</span>{% endif %}
+            {% else %}
+            <span class="badge bg-light text-dark">No AI output</span>
+            {% endif %}
+        </p>
+    </div>
+    <div class="btn-group flex-wrap">
+        <a href="{% url 'ai_extraction:batch_update' batch.pk %}" class="btn btn-outline-primary">Edit batch</a>
+        <a href="{% url 'ai_extraction:candidate_create' %}?batch={{ batch.pk }}" class="btn btn-outline-primary">Create Candidate Manually</a>
+        <a href="{% url 'ai_extraction:batch_delete' batch.pk %}" class="btn btn-outline-danger">Delete</a>
+    </div>
+</div>
+
+{% if fast_import_preview %}
+<div class="detail-section border-warning">
+    <h2 class="h6 text-uppercase text-muted">Last fast import summary</h2>
+    <ul class="mb-0">
+        {% for line in fast_import_preview.summary_lines %}
+        <li>{{ line }}</li>
+        {% endfor %}
+    </ul>
+    {% if fast_import_preview.errors %}
+    <details class="mt-2">
+        <summary class="small text-danger">Show error details ({{ fast_import_preview.errors|length }})</summary>
+        <ul class="small mt-2 mb-0">
+            {% for err in fast_import_preview.errors %}
+            <li>{{ err }}</li>
+            {% endfor %}
+        </ul>
+    </details>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if parse_preview %}
+<div class="detail-section border-primary">
+    <h2 class="h6 text-uppercase text-muted">Last parse summary (candidates)</h2>
+    <ul class="mb-0">
+        {% for line in parse_preview.summary_lines %}
+        <li>{{ line }}</li>
+        {% endfor %}
+    </ul>
+    {% if parse_preview.errors %}
+    <details class="mt-2">
+        <summary class="small text-danger">Show error details ({{ parse_preview.errors|length }})</summary>
+        <ul class="small mt-2 mb-0">
+            {% for err in parse_preview.errors %}
+            <li>{{ err }}</li>
+            {% endfor %}
+        </ul>
+    </details>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if batch.parse_error and not parse_preview %}
+<div class="alert alert-warning">
+    <strong>Parse log:</strong>
+    <pre class="mb-0 mt-2 small" style="white-space: pre-wrap;">{{ batch.parse_error }}</pre>
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Metadata</h2>
+            <dl class="row mb-0 small">
+                <dt class="col-4">Source</dt>
+                <dd class="col-8">{% if batch.source %}<a href="{% url 'library:source_detail' batch.source.pk %}">{{ batch.source.title }}</a>{% else %}—{% endif %}</dd>
+                <dt class="col-4">Chapter</dt>
+                <dd class="col-8">{% if batch.chapter %}<a href="{% url 'library:chapter_detail' batch.chapter.pk %}">{{ batch.chapter.title }}</a>{% else %}—{% endif %}</dd>
+                <dt class="col-4">Template</dt>
+                <dd class="col-8"><a href="{% url 'ai_extraction:prompt_detail' batch.prompt_template.pk %}">{{ batch.prompt_template.name }}</a></dd>
+            </dl>
+            {% if batch.notes %}
+            <p class="mt-3 mb-0 small"><strong>Notes:</strong> {{ batch.notes|linebreaks }}</p>
+            {% endif %}
+        </div>
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Input text</h2>
+            <pre class="bg-light p-3 rounded small mb-0" style="max-height: 240px; overflow: auto; white-space: pre-wrap;">{{ batch.input_text }}</pre>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted mb-2">Quality profile (preview)</h2>
+            <form method="get" class="d-flex gap-2 flex-wrap align-items-end mb-2">
+                <div class="flex-grow-1">
+                    <label class="form-label small">Profile</label>
+                    <select name="profile" class="form-select form-select-sm">
+                        <option value="">Template defaults</option>
+                        {% for key, label in quality_profiles %}
+                        <option value="{{ key }}" {% if profile_key == key %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-sm btn-outline-primary">Refresh preview</button>
+            </form>
+            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                <h2 class="h6 text-uppercase text-muted mb-0">Final prompt (copy to Claude)</h2>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-primary" id="copy-prompt-btn">Copy full prompt</button>
+                    <button type="button" class="btn btn-outline-secondary" id="copy-json-btn">Copy JSON schema</button>
+                </div>
+            </div>
+            <p class="form-text">{% if built_prompt.profile_name %}Profile: {{ built_prompt.profile_name }} · {% endif %}{{ built_prompt.behavior_summary|linebreaksbr }}</p>
+            <details class="mb-2" open>
+                <summary class="small fw-semibold">Preview final prompt</summary>
+                <textarea id="combined-prompt" class="form-control font-monospace small mt-2" rows="12" readonly>{{ combined_prompt }}</textarea>
+            </details>
+            <details class="mb-2">
+                <summary class="small fw-semibold">Applied rules ({{ applied_rules|length }})</summary>
+                <ul class="small mt-2 mb-0">
+                    {% for rule in applied_rules %}
+                    <li>{{ rule }}</li>
+                    {% empty %}
+                    <li class="text-muted">No extra rules beyond template.</li>
+                    {% endfor %}
+                </ul>
+            </details>
+            <details>
+                <summary class="small fw-semibold">Expected JSON schema</summary>
+                <pre class="bg-light p-2 rounded small mt-2 mb-0" style="max-height: 200px; overflow: auto; white-space: pre-wrap;">{{ json_instructions }}</pre>
+            </details>
+            <textarea id="json-instructions" class="d-none">{{ json_instructions }}</textarea>
+            <p class="form-text mb-0 mt-2">Nothing is sent automatically. <a href="{% url 'ai_extraction:prompt_sandbox' %}">Open prompt sandbox</a></p>
+        </div>
+    </div>
+</div>
+
+{% include 'ai_extraction/includes/extraction_guidance.html' %}
+
+{% if batch_quality %}
+<div class="detail-section">
+    <h2 class="h6 text-uppercase text-muted">Batch quality metrics</h2>
+    <div class="row g-2 small">
+        <div class="col-md-2"><strong>Candidates:</strong> {{ batch_quality.candidate_count }}</div>
+        <div class="col-md-2"><strong>Imported:</strong> {{ batch_quality.candidates_imported }}</div>
+        <div class="col-md-2"><strong>Rejected:</strong> {{ batch_quality.candidates_rejected }}</div>
+        <div class="col-md-2"><strong>KU count:</strong> {{ batch_quality.imported_units_count }}</div>
+        <div class="col-md-2"><strong>Approved:</strong> {{ batch_quality.approved_units_count }} ({{ batch_quality.approval_ratio }}%)</div>
+        <div class="col-md-2"><strong>Duplicates:</strong> {{ batch_quality.duplicate_suspects_count }} ({{ batch_quality.duplicate_ratio }}%)</div>
+        <div class="col-md-2"><strong>Pending review:</strong> {{ batch_quality.pending_review_count }}</div>
+        <div class="col-md-2"><strong>Rejection ratio:</strong> {{ batch_quality.review_rejection_ratio }}%</div>
+        <div class="col-md-2"><strong>Typical confidence:</strong> {{ batch_quality.avg_confidence_label }}</div>
+    </div>
+</div>
+{% endif %}
+
+<div class="detail-section">
+    <h2 class="h6 text-uppercase text-muted">Claude output &amp; status</h2>
+    <form method="post" action="{% url 'ai_extraction:batch_ai_output' batch.pk %}">
+        {% csrf_token %}
+        {% for field in ai_output_form %}
+        <div class="mb-3">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Save AI output</button>
+    </form>
+    {% if batch.ai_output_raw %}
+    <div class="mt-3 d-flex flex-wrap gap-2 align-items-start">
+        <form method="post" action="{% url 'ai_extraction:batch_parse' batch.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success">Parse to Candidates</button>
+        </form>
+        <form method="post" action="{% url 'ai_extraction:batch_fast_import' batch.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-warning">Parse &amp; Fast Import</button>
+        </form>
+    </div>
+    <p class="text-muted small mt-2 mb-1">
+        <strong>Parse to Candidates</strong> — creates extraction candidates for manual review before import.
+    </p>
+    <p class="text-warning small mb-0">
+        <strong>Fast Import</strong> skips candidate review and imports directly into Knowledge Units as pending review items.
+        Duplicate titles already in the library are skipped.
+    </p>
+    {% endif %}
+</div>
+
+<div class="detail-section">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h6 text-uppercase text-muted mb-0">Candidates ({{ batch.candidates.count }})</h2>
+        <a href="{% url 'ai_extraction:candidate_list' %}?batch={{ batch.pk }}" class="btn btn-sm btn-outline-secondary">Filter list</a>
+    </div>
+    <ul class="list-group list-group-flush">
+        {% for c in batch.candidates.all %}
+        <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+            <a href="{% url 'ai_extraction:candidate_detail' c.pk %}">{{ c.title }}</a>
+            <span class="badge bg-light text-dark">{{ c.get_import_status_display }}</span>
+        </li>
+        {% empty %}
+        <li class="list-group-item px-0 text-muted">No candidates yet. Parse AI output or create manually.</li>
+        {% endfor %}
+    </ul>
+</div>
+
+<script>
+document.getElementById('copy-prompt-btn')?.addEventListener('click', function () {
+    const ta = document.getElementById('combined-prompt');
+    navigator.clipboard.writeText(ta.value).then(function () {
+        const btn = document.getElementById('copy-prompt-btn');
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(function () { btn.textContent = orig; }, 2000);
+    });
+});
+document.getElementById('copy-json-btn')?.addEventListener('click', function () {
+    const text = document.getElementById('json-instructions').value;
+    navigator.clipboard.writeText(text).then(function () {
+        const btn = document.getElementById('copy-json-btn');
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(function () { btn.textContent = orig; }, 2000);
+    });
+});
+</script>
+{% endblock %}

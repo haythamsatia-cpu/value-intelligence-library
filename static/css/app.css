@@ -1,0 +1,121 @@
+:root {
+    --vil-sidebar-width: 260px;
+    --vil-topbar-height: 56px;
+    --vil-primary: #1e3a5f;
+    --vil-accent: #2c5282;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background-color: #f4f6f9;
+}
+
+.vil-topbar {
+    height: var(--vil-topbar-height);
+    background: var(--vil-primary);
+    color: #fff;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1030;
+    display: flex;
+    align-items: center;
+    padding: 0 1.25rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.vil-topbar .brand {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #fff;
+    text-decoration: none;
+}
+
+.vil-sidebar {
+    position: fixed;
+    top: var(--vil-topbar-height);
+    left: 0;
+    width: var(--vil-sidebar-width);
+    height: calc(100vh - var(--vil-topbar-height));
+    background: #fff;
+    border-right: 1px solid #dee2e6;
+    overflow-y: auto;
+    padding: 1rem 0;
+    z-index: 1020;
+}
+
+.vil-sidebar .nav-link {
+    color: #495057;
+    padding: 0.5rem 1.25rem;
+    border-left: 3px solid transparent;
+}
+
+.vil-sidebar .nav-link:hover,
+.vil-sidebar .nav-link.active {
+    background: #eef2f7;
+    color: var(--vil-primary);
+    border-left-color: var(--vil-accent);
+}
+
+.vil-main {
+    margin-left: var(--vil-sidebar-width);
+    margin-top: var(--vil-topbar-height);
+    padding: 1.5rem;
+    min-height: calc(100vh - var(--vil-topbar-height));
+}
+
+.stat-card {
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.stat-card .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--vil-primary);
+}
+
+.page-header {
+    margin-bottom: 1.5rem;
+}
+
+.filter-bar {
+    background: #fff;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.table-card {
+    background: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+}
+
+.detail-section {
+    background: #fff;
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
+}
+
+.login-card {
+    width: 100%;
+    max-width: 400px;
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}

@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block title %}Ingestion — {{ job.source.title }}{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-1">Document ingestion</h1>
+        <p class="text-muted mb-0">
+            <a href="{% url 'library:source_detail' job.source.pk %}">{{ job.source.title }}</a>
+            · {{ job.get_extraction_method_display }}
+            · <span class="badge bg-secondary">{{ job.get_status_display }}</span>
+        </p>
+    </div>
+    <div class="btn-group">
+        <a href="{% url 'ai_extraction:chunk_list' %}?job={{ job.pk }}" class="btn btn-outline-secondary">View chunks</a>
+        <a href="{% url 'ai_extraction:ingestion_delete' job.pk %}" class="btn btn-outline-danger">Delete</a>
+    </div>
+</div>
+
+{% if job.error_message %}
+<div class="alert alert-danger">{{ job.error_message|linebreaks }}</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Workflow</h2>
+            <ol class="mb-0 small">
+                <li>Extract text (PDF) or paste manual text below</li>
+                <li>Create text chunks (~12,000 characters each)</li>
+                <li>Create extraction batches (per chunk or bulk)</li>
+                <li>Continue in <a href="{% url 'ai_extraction:batch_list' %}">Extraction Batches</a> → Claude → parse → import</li>
+            </ol>
+        </div>
+        {% if job.extraction_method == 'pypdf' and job.file %}
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">PDF file</h2>
+            <p class="mb-2"><a href="{{ job.file.url }}" target="_blank">Download uploaded PDF</a></p>
+            {% if job.status != 'extracting' %}
+            <form method="post" action="{% url 'ai_extraction:ingestion_extract' job.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">Extract text from PDF</button>
+            </form>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% if job.extraction_method == 'manual_text' or job.status == 'failed' %}
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Manual text</h2>
+            <form method="post" action="{% url 'ai_extraction:ingestion_manual_text' job.pk %}">
+                {% csrf_token %}
+                {{ manual_text_form.extracted_text }}
+                <button type="submit" class="btn btn-primary mt-2">Save manual text</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+    <div class="col-lg-6">
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Extracted text preview</h2>
+            {% if job.extracted_text %}
+            <pre class="bg-light p-3 rounded small mb-0" style="max-height: 320px; overflow: auto; white-space: pre-wrap;">{{ job.extracted_text|truncatechars:8000 }}</pre>
+            <p class="form-text mt-2">{{ job.extracted_text|length }} characters total</p>
+            {% else %}
+            <p class="text-muted mb-0">No text extracted yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if job.extracted_text %}
+<div class="detail-section">
+    <h2 class="h6 text-uppercase text-muted">Create chunks</h2>
+    <form method="post" action="{% url 'ai_extraction:ingestion_create_chunks' job.pk %}" class="row g-2 align-items-end">
+        {% csrf_token %}
+        <div class="col-md-4">
+            <label class="form-label">Chunk size (characters)</label>
+            <input type="number" name="chunk_size" value="12000" min="5000" max="20000" class="form-control">
+        </div>
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-primary">Create text chunks</button>
+        </div>
+    </form>
+    <p class="form-text mb-0">Default 12,000 characters. Re-running replaces existing chunks for this job.</p>
+</div>
+{% endif %}
+
+{% if chunk_count %}
+<div class="detail-section">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h6 text-uppercase text-muted mb-0">Text chunks ({{ chunk_count }})</h2>
+        <span class="text-muted small">{{ chunks_without_batch }} without batch</span>
+    </div>
+    <ul class="list-group list-group-flush mb-3">
+        {% for chunk in job.chunks.all %}
+        <li class="list-group-item px-0 d-flex justify-content-between">
+            <a href="{% url 'ai_extraction:chunk_detail' chunk.pk %}">{{ chunk.title }}</a>
+            {% if chunk.created_batch %}
+            <a href="{% url 'ai_extraction:batch_detail' chunk.created_batch.pk %}" class="badge bg-success text-decoration-none">Batch</a>
+            {% else %}
+            <span class="badge bg-light text-dark">No batch</span>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% if chunks_without_batch %}
+    <h3 class="h6">Bulk create extraction batches</h3>
+    <form method="post" action="{% url 'ai_extraction:ingestion_bulk_batches' job.pk %}" class="row g-2 align-items-end">
+        {% csrf_token %}
+        <div class="col-md-6">
+            <label class="form-label">Prompt template</label>
+            {{ bulk_batch_form.prompt_template }}
+        </div>
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-success">Create batches for all unlinked chunks</button>
+        </div>
+    </form>
+    {% endif %}
+    {% if batches_with_ai_output %}
+    <h3 class="h6 mt-4">Bulk fast import</h3>
+    <p class="small text-muted">
+        {{ batches_with_ai_output }} batch(es) linked to this job have saved AI output.
+        Fast import creates knowledge units directly (pending review) and skips exact duplicate titles.
+    </p>
+    <form method="post" action="{% url 'ai_extraction:ingestion_bulk_fast_import' job.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-warning">Parse &amp; Fast Import All</button>
+    </form>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if fast_import_preview %}
+<div class="detail-section border-warning">
+    <h2 class="h6 text-uppercase text-muted">Last bulk fast import summary</h2>
+    {% if fast_import_preview.batch_count %}
+    <p class="small text-muted">Processed {{ fast_import_preview.batch_count }} batch(es).</p>
+    {% endif %}
+    <ul class="mb-0">
+        {% for line in fast_import_preview.summary_lines %}
+        <li>{{ line }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+{% endblock %}

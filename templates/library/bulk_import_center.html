@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Bulk Import — Value Intelligence Library{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-0">Bulk Source Import</h1>
+        <p class="text-muted mb-0">Onboard large book libraries via CSV or folder scan (read-only)</p>
+    </div>
+    <a href="{% url 'library:source_list' %}" class="btn btn-outline-secondary">Source Library</a>
+</div>
+
+{% if import_summary %}
+<div class="alert alert-success">
+    <h2 class="h6">Last import summary</h2>
+    <ul class="mb-0">
+        <li>Imported: {{ import_summary.total_imported }}</li>
+        <li>Skipped duplicates: {{ import_summary.skipped_duplicates }}</li>
+        <li>Unmatched domains (Uncategorized): {{ import_summary.unmatched_domains }}</li>
+        <li>Failed rows: {{ import_summary.failed_rows }}</li>
+        {% if import_summary.scanned_files_count %}<li>Files scanned: {{ import_summary.scanned_files_count }}</li>{% endif %}
+    </ul>
+</div>
+{% endif %}
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">CSV import</h2>
+            <p class="small text-muted">Upload a spreadsheet with titles, authors, domains, tags, and optional file paths.</p>
+            <p><a href="{% url 'library:bulk_import_template' %}" class="btn btn-sm btn-outline-secondary">Download CSV template</a></p>
+            <form method="post" action="{% url 'library:bulk_import_csv' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                {{ csv_form.csv_file.label_tag }}
+                {{ csv_form.csv_file }}
+                <button type="submit" class="btn btn-primary mt-2">Upload &amp; preview</button>
+            </form>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="detail-section">
+            <h2 class="h6 text-uppercase text-muted">Folder scanner</h2>
+            <p class="small text-muted">Recursively discovers PDF, DOCX, and TXT files. Does not copy or modify files.</p>
+            <form method="post" action="{% url 'library:bulk_import_folder_scan' %}">
+                {% csrf_token %}
+                {{ folder_form.folder_path.label_tag }}
+                {{ folder_form.folder_path }}
+                <p class="form-text">{{ folder_form.folder_path.help_text }}</p>
+                <button type="submit" class="btn btn-primary mt-2">Scan folder</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="detail-section">
+    <h2 class="h6 text-uppercase text-muted">Safety</h2>
+    <ul class="small mb-0">
+        <li>Folder scanner is <strong>read-only</strong> — original files stay in place.</li>
+        <li><code>file_path</code> / scanner paths are stored as <code>original_file_path</code> references only.</li>
+        <li>Duplicate detection uses title + author and filename similarity.</li>
+        <li>Unmatched domains map to <strong>Uncategorized</strong>.</li>
+    </ul>
+</div>
+{% endblock %}

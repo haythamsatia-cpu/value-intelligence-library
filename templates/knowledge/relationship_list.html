@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}Knowledge Relationships — Value Intelligence Library{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h1 class="h3 mb-0">Knowledge Relationships</h1>
+        <p class="text-muted mb-0">Links between knowledge units</p>
+    </div>
+    <a href="{% url 'knowledge:relationship_create' %}" class="btn btn-primary">Add Relationship</a>
+</div>
+<div class="filter-bar">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-5">
+            <label class="form-label">From knowledge unit</label>
+            <select name="from_knowledge_unit" class="form-select">
+                <option value="">All units</option>
+                {% for unit in knowledge_units %}
+                <option value="{{ unit.pk }}" {% if filter_from_unit == unit.pk|stringformat:"s" %}selected{% endif %}>{{ unit.title|truncatechars:60 }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-5">
+            <label class="form-label">Relationship type</label>
+            <select name="relationship_type" class="form-select">
+                <option value="">All types</option>
+                {% for value, label in relationship_types %}
+                <option value="{{ value }}" {% if filter_relationship_type == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Filter</button>
+        </div>
+    </form>
+</div>
+<div class="table-card">
+    <table class="table table-hover mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>From</th>
+                <th>Type</th>
+                <th>To</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rel in relationships %}
+            <tr>
+                <td><a href="{% url 'knowledge:knowledgeunit_detail' rel.from_knowledge_unit.pk %}">{{ rel.from_knowledge_unit.title|truncatechars:40 }}</a></td>
+                <td>{{ rel.get_relationship_type_display }}</td>
+                <td><a href="{% url 'knowledge:knowledgeunit_detail' rel.to_knowledge_unit.pk %}">{{ rel.to_knowledge_unit.title|truncatechars:40 }}</a></td>
+                <td>
+                    <a href="{% url 'knowledge:relationship_detail' rel.pk %}" class="btn btn-sm btn-outline-primary">View</a>
+                    <a href="{% url 'knowledge:relationship_update' rel.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center text-muted py-4">No relationships found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% include 'includes/pagination.html' %}
+{% endblock %}

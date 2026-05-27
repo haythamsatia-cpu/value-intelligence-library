@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Authors — Value Intelligence Library{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h1 class="h3 mb-0">Authors</h1>
+        <p class="text-muted mb-0">People and organizations behind your sources</p>
+    </div>
+    <a href="{% url 'library:author_create' %}" class="btn btn-primary">Add Author</a>
+</div>
+<div class="table-card">
+    <table class="table table-hover mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>Name</th>
+                <th>Organization</th>
+                <th>Sources</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for author in authors %}
+            <tr>
+                <td><a href="{% url 'library:author_detail' author.pk %}">{{ author.name }}</a></td>
+                <td>{{ author.organization|default:"—" }}</td>
+                <td>{{ author.sources.count }}</td>
+                <td>
+                    <a href="{% url 'library:author_update' author.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center text-muted py-4">No authors yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% include 'includes/pagination.html' %}
+{% endblock %}

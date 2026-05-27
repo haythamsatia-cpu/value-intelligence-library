@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}Delete Extraction Batch{% endblock %}
+{% block content %}
+<div class="detail-section">
+    <h1 class="h4">Delete Extraction Batch</h1>
+    <p>Delete <strong>{{ batch.title }}</strong> and all its candidates?</p>
+    <form method="post">{% csrf_token %}
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a href="{% url 'ai_extraction:batch_detail' batch.pk %}" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

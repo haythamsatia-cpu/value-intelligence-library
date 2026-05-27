@@ -1,0 +1,122 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Value Intelligence Library{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{% static 'css/app.css' %}" rel="stylesheet">
+</head>
+<body>
+    <header class="vil-topbar">
+        <a href="{% url 'dashboard:index' %}" class="brand me-auto">Value Intelligence Library</a>
+        {% if user.is_authenticated %}
+        <span class="text-white-50 small me-3">{{ user.username }}</span>
+        <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">Logout</a>
+        {% endif %}
+    </header>
+
+    {% if user.is_authenticated %}
+    <nav class="vil-sidebar">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'index' and request.resolver_match.namespace == 'dashboard' %}active{% endif %}"
+                   href="{% url 'dashboard:index' %}">Dashboard</a>
+            </li>
+            <li class="nav-item mt-2">
+                <span class="nav-link disabled text-muted small text-uppercase py-1">Library</span>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.namespace == 'library' and 'source' in request.path and 'bulk-import' not in request.path %}active{% endif %}"
+                   href="{% url 'library:source_list' %}">Source Library</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.namespace == 'library' and 'bulk-import' in request.path %}active{% endif %}"
+                   href="{% url 'library:bulk_import' %}">Bulk Import</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.namespace == 'library' and 'processing-center' in request.path %}active{% endif %}"
+                   href="{% url 'library:processing_center' %}">Processing Center</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.namespace == 'library' and 'author' in request.path %}active{% endif %}"
+                   href="{% url 'library:author_list' %}">Authors</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.namespace == 'library' and 'chapter' in request.path %}active{% endif %}"
+                   href="{% url 'library:chapter_list' %}">Chapters</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.namespace == 'knowledge' and 'unit' in request.path %}active{% endif %}"
+                   href="{% url 'knowledge:knowledgeunit_list' %}">Knowledge Units</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.namespace == 'knowledge' and 'review-queue' in request.path %}active{% endif %}"
+                   href="{% url 'knowledge:review_queue' %}">Review Queue</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.namespace == 'knowledge' and 'taxonomy-cleanup' in request.path %}active{% endif %}"
+                   href="{% url 'knowledge:taxonomy_cleanup' %}">Taxonomy Cleanup</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.namespace == 'knowledge' and 'relationship' in request.path %}active{% endif %}"
+                   href="{% url 'knowledge:relationship_list' %}">Relationships</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.namespace == 'taxonomy' %}active{% endif %}"
+                   href="{% url 'taxonomy:index' %}">Taxonomy</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'search' %}active{% endif %}"
+                   href="{% url 'dashboard:search' %}">Search</a>
+            </li>
+            <li class="nav-item mt-2">
+                <span class="nav-link disabled text-muted small text-uppercase py-1">AI Extraction</span>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.namespace == 'ai_extraction' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+                   href="{% url 'ai_extraction:dashboard' %}">Extraction Dashboard</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.namespace == 'ai_extraction' and 'prompt' in request.path and 'sandbox' not in request.path %}active{% endif %}"
+                   href="{% url 'ai_extraction:prompt_list' %}">Prompt Templates</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.namespace == 'ai_extraction' and 'prompt-sandbox' in request.path %}active{% endif %}"
+                   href="{% url 'ai_extraction:prompt_sandbox' %}">Prompt Sandbox</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.namespace == 'ai_extraction' and 'batch' in request.path %}active{% endif %}"
+                   href="{% url 'ai_extraction:batch_list' %}">Extraction Batches</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.namespace == 'ai_extraction' and 'candidate' in request.path %}active{% endif %}"
+                   href="{% url 'ai_extraction:candidate_list' %}">Candidates</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.namespace == 'ai_extraction' and 'ingestion' in request.path or request.resolver_match.namespace == 'ai_extraction' and 'chunks' in request.path %}active{% endif %}"
+                   href="{% url 'ai_extraction:ingestion_list' %}">Document Ingestion</a>
+            </li>
+            <li class="nav-item mt-3">
+                <a class="nav-link text-muted small" href="/admin/" target="_blank">Django Admin</a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+
+    <main class="{% if user.is_authenticated %}vil-main{% endif %}">
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
