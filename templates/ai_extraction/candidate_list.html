@@ -7,6 +7,9 @@
         <p class="text-muted mb-0"><a href="{% url 'ai_extraction:dashboard' %}">← AI Extraction</a></p>
     </div>
     <a href="{% url 'ai_extraction:candidate_create' %}" class="btn btn-primary">Add Candidate</a>
+    {% if filter_source %}
+    <a href="{% url 'library:source_review_workspace' filter_source %}" class="btn btn-success">Review Workspace</a>
+    {% endif %}
 </div>
 <div class="filter-bar">
     <form method="get" class="row g-2 align-items-end">

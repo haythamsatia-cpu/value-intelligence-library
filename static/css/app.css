@@ -119,3 +119,29 @@ body {
     border-radius: 0.5rem;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
+
+.review-workspace-table {
+    font-size: 0.8125rem;
+}
+
+.review-workspace-table .review-title {
+    max-width: 220px;
+}
+
+.review-workspace-table .review-actions {
+    white-space: nowrap;
+}
+
+.review-workspace-table .review-actions form {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.review-pipeline-stage {
+    min-width: 88px;
+    flex: 1 1 88px;
+}
+
+.review-preview-row td {
+    border-top: none !important;
+}

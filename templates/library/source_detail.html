@@ -26,6 +26,7 @@
         <a href="{% url 'ai_extraction:candidate_list' %}?source={{ source.pk }}" class="btn btn-outline-secondary">View Candidates</a>
         <a href="{% url 'knowledge:knowledgeunit_list' %}?source={{ source.pk }}" class="btn btn-outline-secondary">Imported Knowledge</a>
         <a href="{% url 'knowledge:review_queue' %}?source={{ source.pk }}" class="btn btn-outline-success">Review Queue</a>
+        <a href="{% url 'library:source_review_workspace' source.pk %}" class="btn btn-success">Open Review Workspace</a>
         <a href="{% url 'library:source_update' source.pk }}" class="btn btn-outline-primary">Edit</a>
         <a href="{% url 'library:source_delete' source.pk }}" class="btn btn-outline-danger">Delete</a>
     </div>

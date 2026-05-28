@@ -24,6 +24,9 @@
     </div>
     <div class="btn-group flex-wrap">
         <a href="{% url 'ai_extraction:batch_update' batch.pk %}" class="btn btn-outline-primary">Edit batch</a>
+        {% if batch.source %}
+        <a href="{% url 'library:source_review_workspace' batch.source.pk %}?tab=candidates&amp;batch={{ batch.pk }}" class="btn btn-success">Review Workspace</a>
+        {% endif %}
         <a href="{% url 'ai_extraction:candidate_create' %}?batch={{ batch.pk }}" class="btn btn-outline-primary">Create Candidate Manually</a>
         <a href="{% url 'ai_extraction:batch_delete' batch.pk %}" class="btn btn-outline-danger">Delete</a>
     </div>

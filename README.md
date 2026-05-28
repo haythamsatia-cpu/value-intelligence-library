@@ -134,7 +134,7 @@ From an ingestion job with multiple batches that already have AI output saved, u
 | Mode | Use when |
 |------|----------|
 | **Parse to Candidates** | You want to edit, reject, or curate extractions before they enter the knowledge base |
-| **Parse & Fast Import** | You are a solo expert ingesting at speed; you will review later in **Knowledge → Review Queue** |
+| **Parse & Fast Import** | You are a solo expert ingesting at speed; review later in **Source Review Workspace** or **Review Queue** |
 
 Fast import does **not** bypass governance: units are `pending_review`, searchable immediately, and visible in duplicate review tools. Exact duplicate titles in the library are skipped automatically. If the JSON domain is missing or does not match taxonomy, units are assigned to the **Uncategorized** domain (created on first use).
 
@@ -158,6 +158,36 @@ Onboard large book/document libraries via **Library → Bulk Import** (`/library
 2. **Folder scanner** — enter a local root path (e.g. `C:\Books\Claims`); the app recursively discovers PDF, DOCX, and TXT files (**read-only** — originals are never moved or deleted).
 
 Preview shows duplicate warnings (title + author, path, filename similarity). Use **Import all non-duplicates** for full-library commits across paginated preview. Unmatched domains map to **Uncategorized**. Sources store `original_file_path`, extension, and file size for later ingestion. See [docs/architecture.md](docs/architecture.md#bulk-source--book-library-import-phase-8).
+
+### Source Review Workspace (Phase 9)
+
+The **Source Review Workspace** (`/library/sources/<id>/review-workspace/`) is the main place to review a whole book/source in one session — without jumping batch-by-batch.
+
+Open from **Source detail → Open Review Workspace**, or from Processing Center, batch detail, candidate list, or knowledge list (when filtered by source).
+
+**What it shows for one source:**
+
+- All **ExtractionCandidates** from batches linked to that source
+- All **KnowledgeUnits** linked directly to the source or imported from its batches
+
+**Tabs:** Candidates · Imported Knowledge Units · Pending Review · Approved · Rejected/Archived · Duplicates
+
+**Actions:** Inline approve/review/archive/duplicate/import/reject; bulk approve, taxonomy assignment, tags, confidence/consulting/teaching values. Expandable rows show executive insight, detailed explanation, and practical application without opening each record.
+
+**Candidate review vs fast import:** Candidates are curated before entering the knowledge base (`imported_via=candidate_review`). Fast-imported units skip the candidate step and land as `pending_review` (`imported_via=fast_import`) — both appear in the workspace for governance.
+
+**Recommended daily workflow:**
+
+1. Bulk import / register sources (Phase 8)
+2. Ingest PDF (Document Ingestion)
+3. Create chunks and extraction batches
+4. Run the manual Claude workflow (copy prompt → paste JSON)
+5. Parse to **candidates** or **fast import**
+6. **Review in Source Review Workspace** (book-level)
+7. Taxonomy cleanup for Uncategorized or missing fields
+8. Approve and curate approved knowledge
+
+See [docs/architecture.md](docs/architecture.md#source-review-workspace-phase-9) for batch vs source-level review and full action reference.
 
 ### 6. Run development server
 

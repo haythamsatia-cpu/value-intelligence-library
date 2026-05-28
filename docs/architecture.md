@@ -280,6 +280,119 @@ Computed in `library/source_readiness.py`: file linked, ingestion started, extra
 
 - PDF, DOCX, TXT (read-only discovery; OCR and additional formats are future work).
 
+## Source Review Workspace (Phase 9)
+
+Book-level review hub: one page per source where all extraction output for that book can be triaged, governed, and approved without switching between batches.
+
+**No Claude API**, **no embeddings** — reuses existing batch/candidate/fast-import flows; the workspace is the operational UI layer on top.
+
+### Purpose
+
+Stop reviewing extraction results batch-by-batch. The workspace aggregates:
+
+- `ExtractionCandidate` rows from all `ExtractionBatch` records for the source
+- `KnowledgeUnit` rows where `source` matches **or** `imported_from_batch.source` matches
+
+This is the **recommended primary review workflow** after parse/import. Batch detail, candidate list, and Review Queue remain available for narrow or cross-source work.
+
+### Entry points
+
+| URL | Purpose |
+|-----|---------|
+| `/library/sources/<uuid>/review-workspace/` | Main workspace (tabs, filters, metrics, pipeline) |
+| `/library/sources/<uuid>/review-workspace/bulk/` | Bulk actions (candidates + knowledge units) |
+| `/library/sources/<uuid>/review-workspace/candidates/<uuid>/action/` | Inline single-candidate import/reject |
+
+**Quick links:** Source detail (**Open Review Workspace**), Processing Center, batch detail, candidate list (`?source=`), knowledge list (`?source=`).
+
+Implementation: `library/review_workspace.py`, `library/review_workspace_views.py`.
+
+### Batch-level processing vs source-level review
+
+| Concern | Batch-level (Phases 2–7) | Source-level (Phase 9) |
+|---------|--------------------------|-------------------------|
+| **Goal** | Create prompts, run Claude, parse JSON, import one chunk/batch at a time | Review **all** candidates and units for one book in one place |
+| **Where** | Batch detail, candidate list, ingestion jobs | Source Review Workspace |
+| **Scope** | Single batch / chunk | Entire source (all batches + all imported units) |
+| **Metrics** | Parse status, candidate counts per batch | Source pipeline, approval ratio, pending/approved/duplicate counts |
+| **When to use** | Extraction and parse operations | Daily governance after import |
+
+Processing Center tracks **operational pipeline** status; the Review Workspace is where **human judgment** happens at book scale.
+
+### Candidate review vs fast-imported knowledge units
+
+| Path | Created how | `imported_via` | Initial state | Workspace tab |
+|------|-------------|----------------|---------------|---------------|
+| **Candidate review** | Parse JSON → candidates → import selected | `candidate_review` | `pending_review` / `ai_extracted` | **Candidates** (before import), then **Pending Review** |
+| **Fast import** | Parse JSON → direct `KnowledgeUnit` creation | `fast_import` | `pending_review` / `ai_extracted` | **Imported Knowledge Units**, **Pending Review** |
+
+Both paths require governance (approve, taxonomy, duplicate handling). The workspace shows provenance via `imported_via` and batch/page filters.
+
+### Workspace tabs
+
+| Tab | Contents |
+|-----|----------|
+| **Candidates** | All extraction candidates for the source (pending, imported, rejected) |
+| **Imported Knowledge Units** | All knowledge units for the source (any governance state) |
+| **Pending Review** | Units with `governance_status=pending_review` |
+| **Approved** | Units with `governance_status=approved` |
+| **Rejected/Archived** | Archived/rejected units (+ rejected candidate count in metrics) |
+| **Duplicates** | Units flagged `is_duplicate=True` |
+
+Each tab shows a count badge. Expandable rows reveal full insight / explanation / practical application text.
+
+### Source progress (pipeline header)
+
+Visual stages derived from `library/processing.py`:
+
+**PDF extracted → Chunks → Batches → Parsed → Imported → Reviewed → Approved**
+
+Shown with percentage and state (pending / in progress / complete / failed) at the top of the workspace.
+
+### Review metrics
+
+- Total candidates · Pending candidates · Imported units · Pending review · Approved · Archived/rejected · Duplicate suspects · Approval ratio
+
+### Filters (GET)
+
+Search text, batch, page range, domain, knowledge type, review status, governance status, imported_via, confidence, duplicate flag (knowledge units); import status (candidates).
+
+### Bulk review actions
+
+**Candidates (selected rows):**
+
+- Import selected → creates `KnowledgeUnit` via existing import service
+- Reject selected
+
+**Knowledge units (selected rows):**
+
+- Approve · Archive/reject · Set reviewed · Mark duplicate
+- Assign domain, subdomain, topic, concept (taxonomy bulk update)
+- Add tags · Set confidence · Set consulting value · Set teaching value
+
+Reuses `knowledge.views._apply_bulk_action` and `knowledge.taxonomy_cleanup.apply_taxonomy_cleanup_bulk_update`.
+
+### Inline review actions (single row, no detail page)
+
+**Candidates:** Import · Reject · Edit · Open batch
+
+**Knowledge units:** Approve (✓) · Set reviewed (R) · Archive (A) · Mark duplicate (D) · Confidence dropdown · Edit · Open detail
+
+Posts to workspace candidate action URL or `KnowledgeUnitQuickActionView` with `next_url` returning to the workspace.
+
+### Recommended daily workflow
+
+1. **Bulk import / register sources** — Phase 8 CSV or folder scan; assign domains
+2. **Ingest PDF** — Document Ingestion job linked to source; extract text
+3. **Create chunks and batches** — chunk large texts; attach prompt templates
+4. **Claude workflow** — preview prompt (Sandbox / batch detail), paste JSON output, save
+5. **Parse → candidates or fast import** — curate first vs speed first
+6. **Review in Source Review Workspace** — book-level tabs, inline + bulk governance
+7. **Taxonomy cleanup** — fix Uncategorized, missing subdomain/topic/concept (`/knowledge/taxonomy-cleanup/`)
+8. **Approve and curate** — approved units ready for search and future phases
+
+Review Queue and Taxonomy Cleanup remain useful for **cross-source** sweeps; the workspace is optimized for **one book at a time**.
+
 ## Phase roadmap
 
 | Phase | Scope |
@@ -294,6 +407,7 @@ Computed in `library/source_readiness.py`: file linked, ingestion started, extra
 | **6** | Source Processing Center — pipeline metrics, status, activity feed, operational dashboard |
 | **7** | Prompt quality — extraction rules, profiles, dynamic builder, validation warnings, sandbox |
 | **8** | Bulk source import — CSV, folder scanner, staging preview, duplicates, file path linking |
+| **9** | Source Review Workspace — book-level candidate + knowledge unit review, tabs, inline/bulk governance |
 | **Future** | OCR for scanned PDFs, embeddings, semantic search (not planned in current phases) |
 
 ## Configuration

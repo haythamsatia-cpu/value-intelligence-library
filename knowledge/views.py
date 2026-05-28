@@ -500,12 +500,33 @@ class KnowledgeUnitQuickActionView(View):
             confidence = request.POST.get('confidence_level')
             if confidence in dict(KnowledgeUnit.ValueLevel.choices):
                 unit.confidence_level = confidence
+            consulting = request.POST.get('consulting_value')
+            if consulting in dict(KnowledgeUnit.ValueLevel.choices):
+                unit.consulting_value = consulting
+            teaching = request.POST.get('teaching_value')
+            if teaching in dict(KnowledgeUnit.ValueLevel.choices):
+                unit.teaching_value = teaching
             tag_id = request.POST.get('tag_id')
             if tag_id:
                 tag = Tag.objects.filter(pk=tag_id).first()
                 if tag:
                     unit.tags.add(tag)
             messages.success(request, f'Updated quick review fields: {unit.title}')
+        elif action == 'set_confidence':
+            value = request.POST.get('confidence_level')
+            if value in dict(KnowledgeUnit.ValueLevel.choices):
+                unit.confidence_level = value
+                messages.success(request, f'Set confidence to {value}: {unit.title}')
+        elif action == 'set_consulting':
+            value = request.POST.get('consulting_value')
+            if value in dict(KnowledgeUnit.ValueLevel.choices):
+                unit.consulting_value = value
+                messages.success(request, f'Set consulting value to {value}: {unit.title}')
+        elif action == 'set_teaching':
+            value = request.POST.get('teaching_value')
+            if value in dict(KnowledgeUnit.ValueLevel.choices):
+                unit.teaching_value = value
+                messages.success(request, f'Set teaching value to {value}: {unit.title}')
 
         if notes:
             unit.approval_notes = notes

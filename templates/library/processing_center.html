@@ -166,7 +166,8 @@
             <a href="{% url 'ai_extraction:ingestion_create' %}?source={{ source.pk }}" class="btn btn-outline-primary">Ingestion</a>
             <a href="{% url 'ai_extraction:chunk_list' %}?source={{ source.pk }}" class="btn btn-outline-secondary">Chunks</a>
             <a href="{% url 'ai_extraction:batch_list' %}?source={{ source.pk }}" class="btn btn-outline-secondary">Batches</a>
-            <a href="{% url 'knowledge:review_queue' %}?source={{ source.pk }}" class="btn btn-outline-success">Review</a>
+            <a href="{% url 'library:source_review_workspace' source.pk %}" class="btn btn-outline-success">Review Workspace</a>
+            <a href="{% url 'knowledge:review_queue' %}?source={{ source.pk }}" class="btn btn-outline-secondary">Review Queue</a>
         </div>
     </div>
     <div class="pipeline-row d-flex gap-1 flex-wrap mb-2">

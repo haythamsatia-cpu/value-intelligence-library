@@ -1,0 +1,289 @@
+{% extends 'base.html' %}
+{% block title %}Review Workspace — {{ source.title }}{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+        <h1 class="h3 mb-1">Review Workspace</h1>
+        <p class="text-muted mb-0">
+            <a href="{% url 'library:source_detail' source.pk %}">{{ source.title }}</a>
+            · book-level review (candidates + knowledge units)
+        </p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'library:source_detail' source.pk %}" class="btn btn-outline-secondary">Source detail</a>
+        <a href="{% url 'library:processing_center' %}?q={{ source.title|urlencode }}" class="btn btn-outline-secondary">Processing Center</a>
+        <a href="{% url 'ai_extraction:batch_list' %}?source={{ source.pk }}" class="btn btn-outline-primary">Batches</a>
+    </div>
+</div>
+
+<div class="detail-section mb-3 py-2">
+    <h2 class="h6 text-uppercase text-muted mb-2">Source progress</h2>
+    <div class="review-pipeline d-flex gap-1 flex-wrap">
+        {% for stage in review_pipeline %}
+        <div class="text-center review-pipeline-stage">
+            <div class="small text-muted">{{ stage.label }}</div>
+            <div class="progress" style="height: 6px;">
+                <div class="progress-bar {% if stage.state == 'complete' %}bg-success{% elif stage.state == 'failed' %}bg-danger{% elif stage.state == 'in_progress' %}bg-warning{% else %}bg-secondary{% endif %}" style="width: {{ stage.pct }}%;"></div>
+            </div>
+            <span class="badge bg-light text-dark">{{ stage.pct }}%</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="row g-2 mb-3">
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center py-2"><div class="stat-value">{{ metrics.total_candidates }}</div><div class="small text-muted">Total candidates</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center py-2"><div class="stat-value">{{ metrics.pending_candidates }}</div><div class="small text-muted">Pending candidates</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center py-2"><div class="stat-value">{{ metrics.imported_units }}</div><div class="small text-muted">Imported units</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center py-2"><div class="stat-value">{{ metrics.pending_review_units }}</div><div class="small text-muted">Pending review</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center py-2"><div class="stat-value">{{ metrics.approved_units }}</div><div class="small text-muted">Approved</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center py-2"><div class="stat-value">{{ metrics.archived_rejected }}</div><div class="small text-muted">Archived/rejected</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center py-2"><div class="stat-value">{{ metrics.duplicate_suspects }}</div><div class="small text-muted">Duplicate suspects</div></div></div></div>
+    <div class="col-md-2"><div class="card stat-card"><div class="card-body text-center py-2"><div class="stat-value">{{ metrics.approval_ratio }}%</div><div class="small text-muted">Approval ratio</div></div></div></div>
+</div>
+
+<div class="detail-section mb-3">
+    <div class="d-flex flex-wrap gap-2">
+        {% for tab_key, tab_label in workspace_tabs %}
+        <a href="?tab={{ tab_key }}" class="btn btn-sm {% if tab == tab_key %}btn-dark{% else %}btn-outline-dark{% endif %}">
+            {{ tab_label }}
+            <span class="badge bg-light text-dark ms-1">{% if tab_key == 'candidates' %}{{ tab_counts.candidates }}{% elif tab_key == 'imported' %}{{ tab_counts.imported }}{% elif tab_key == 'pending_review' %}{{ tab_counts.pending_review }}{% elif tab_key == 'approved' %}{{ tab_counts.approved }}{% elif tab_key == 'rejected_archived' %}{{ tab_counts.rejected_archived }}{% elif tab_key == 'duplicates' %}{{ tab_counts.duplicates }}{% endif %}</span>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="filter-bar">
+    <form method="get" class="row g-2 align-items-end">
+        <input type="hidden" name="tab" value="{{ tab }}">
+        <div class="col-md-2"><label class="form-label small">Search</label><input type="search" name="q" value="{{ query }}" class="form-control form-control-sm"></div>
+        <div class="col-md-2"><label class="form-label small">Batch</label>
+            <select name="batch" class="form-select form-select-sm"><option value="">All</option>
+            {% for b in batches %}<option value="{{ b.pk }}" {% if filter_batch == b.pk|stringformat:"s" %}selected{% endif %}>{{ b.title|truncatechars:28 }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-1"><label class="form-label small">Page from</label><input type="number" name="page_from" value="{{ filter_page_from }}" class="form-control form-control-sm" min="1"></div>
+        <div class="col-md-1"><label class="form-label small">Page to</label><input type="number" name="page_to" value="{{ filter_page_to }}" class="form-control form-control-sm" min="1"></div>
+        <div class="col-md-2"><label class="form-label small">Domain</label>
+            <select name="domain" class="form-select form-select-sm"><option value="">All</option>
+            {% for d in domains %}<option value="{{ d.pk }}" {% if filter_domain == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2"><label class="form-label small">Knowledge type</label>
+            <select name="knowledge_type" class="form-select form-select-sm"><option value="">All</option>
+            {% for val, label in knowledge_types %}<option value="{{ val }}" {% if filter_knowledge_type == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+        </div>
+        {% if show_candidates %}
+        <div class="col-md-2"><label class="form-label small">Import status</label>
+            <select name="import_status" class="form-select form-select-sm"><option value="">All</option>
+            {% for val, label in import_statuses %}<option value="{{ val }}" {% if filter_import_status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+        </div>
+        {% else %}
+        <div class="col-md-2"><label class="form-label small">Governance</label>
+            <select name="governance_status" class="form-select form-select-sm"><option value="">All</option>
+            {% for val, label in governance_statuses %}<option value="{{ val }}" {% if filter_governance_status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2"><label class="form-label small">Review status</label>
+            <select name="review_status" class="form-select form-select-sm"><option value="">All</option>
+            {% for val, label in review_statuses %}<option value="{{ val }}" {% if filter_review_status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2"><label class="form-label small">Imported via</label>
+            <select name="imported_via" class="form-select form-select-sm"><option value="">All</option>
+            {% for val, label in imported_via_choices %}<option value="{{ val }}" {% if filter_imported_via == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-1"><label class="form-label small">Confidence</label>
+            <select name="confidence" class="form-select form-select-sm"><option value="">All</option>
+            {% for val, label in value_levels %}<option value="{{ val }}" {% if filter_confidence == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-1"><label class="form-label small">Dup</label>
+            <select name="duplicate" class="form-select form-select-sm"><option value="">All</option><option value="yes" {% if filter_duplicate == 'yes' %}selected{% endif %}>Yes</option><option value="no" {% if filter_duplicate == 'no' %}selected{% endif %}>No</option></select>
+        </div>
+        {% endif %}
+        <div class="col-md-1"><button type="submit" class="btn btn-primary btn-sm w-100">Filter</button></div>
+    </form>
+</div>
+
+{% if show_candidates %}
+<form method="post" action="{% url 'library:source_review_workspace_bulk' source.pk %}" id="bulk-candidate-form">
+    {% csrf_token %}
+    <input type="hidden" name="next_url" value="{{ next_url }}">
+    <input type="hidden" name="scope" value="candidates">
+    <div class="d-flex flex-wrap gap-2 mb-2 align-items-center">
+        <select name="bulk_action" class="form-select form-select-sm" style="max-width: 200px;">
+            <option value="">Bulk action…</option>
+            <option value="import_candidates">Import selected</option>
+            <option value="reject_candidates">Reject selected</option>
+        </select>
+        <button type="submit" class="btn btn-sm btn-success">Apply to selected</button>
+    </div>
+</form>
+    <div class="table-card review-workspace-table">
+        <table class="table table-sm table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:28px"><input type="checkbox" id="select-all-candidates"></th>
+                    <th style="width:28px"></th>
+                    <th>Title</th>
+                    <th>Insight</th>
+                    <th>Domain</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Batch / page</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in candidates %}
+                <tr class="review-row">
+                    <td><input type="checkbox" class="candidate-check" name="candidate_ids" value="{{ c.pk }}" form="bulk-candidate-form"></td>
+                    <td><button type="button" class="btn btn-sm btn-link p-0 review-expand" data-bs-toggle="collapse" data-bs-target="#cand-{{ c.pk }}" aria-label="Expand">▸</button></td>
+                    <td class="review-title">{{ c.title|truncatechars:40 }}</td>
+                    <td class="small text-muted">{{ c.executive_insight|truncatechars:55|default:"—" }}</td>
+                    <td class="small">{{ c.proposed_domain|default:"—" }}</td>
+                    <td class="small">{{ c.get_proposed_knowledge_type_display|default:"—" }}</td>
+                    <td><span class="badge bg-secondary">{{ c.get_import_status_display }}</span></td>
+                    <td class="small"><a href="{% url 'ai_extraction:batch_detail' c.batch.pk %}">{{ c.batch.title|truncatechars:18 }}</a>{% if c.page_ref %} · {{ c.page_ref }}{% endif %}</td>
+                    <td class="review-actions">
+                        {% if c.import_status == 'pending' %}
+                        <form method="post" action="{% url 'library:source_review_workspace_candidate_action' source.pk c.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="next_url" value="{{ next_url }}"><input type="hidden" name="action" value="import"><button type="submit" class="btn btn-xs btn-success btn-sm py-0">Import</button></form>
+                        <form method="post" action="{% url 'library:source_review_workspace_candidate_action' source.pk c.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="next_url" value="{{ next_url }}"><input type="hidden" name="action" value="reject"><button type="submit" class="btn btn-xs btn-outline-danger btn-sm py-0">Reject</button></form>
+                        {% endif %}
+                        <a href="{% url 'ai_extraction:candidate_update' c.pk %}" class="btn btn-sm btn-outline-secondary py-0">Edit</a>
+                        <a href="{% url 'ai_extraction:batch_detail' c.batch.pk %}" class="btn btn-sm btn-outline-secondary py-0">Batch</a>
+                    </td>
+                </tr>
+                <tr class="collapse review-preview-row" id="cand-{{ c.pk }}">
+                    <td colspan="9" class="bg-light small">
+                        <div class="row g-2 py-2">
+                            <div class="col-md-4"><strong>Executive insight</strong><p class="mb-0">{{ c.executive_insight|default:"—"|linebreaksbr }}</p></div>
+                            <div class="col-md-4"><strong>Detailed explanation</strong><p class="mb-0">{{ c.detailed_explanation|default:"—"|linebreaksbr }}</p></div>
+                            <div class="col-md-4"><strong>Practical application</strong><p class="mb-0">{{ c.practical_application|default:"—"|linebreaksbr }}</p></div>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="9" class="text-center text-muted py-4">No candidates for this source.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+
+<form method="post" action="{% url 'library:source_review_workspace_bulk' source.pk %}" id="bulk-unit-form">
+    {% csrf_token %}
+    <input type="hidden" name="next_url" value="{{ next_url }}">
+    <input type="hidden" name="scope" value="units">
+    <div class="detail-section mb-2 py-2">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label small mb-0">Bulk action</label>
+                <select name="bulk_action" class="form-select form-select-sm">
+                    <option value="">—</option>
+                    <option value="bulk_approve">Approve</option>
+                    <option value="bulk_archive">Archive/reject</option>
+                    <option value="bulk_set_reviewed">Set reviewed</option>
+                    <option value="bulk_mark_duplicate">Mark duplicate</option>
+                    <option value="taxonomy_update">Assign taxonomy / values</option>
+                </select>
+            </div>
+            <div class="col-md-2"><label class="form-label small mb-0">Domain</label><select name="bulk_domain" class="form-select form-select-sm"><option value="">—</option>{% for d in domains %}<option value="{{ d.pk }}">{{ d.name }}</option>{% endfor %}</select></div>
+            <div class="col-md-2"><label class="form-label small mb-0">Subdomain</label><select name="bulk_subdomain" class="form-select form-select-sm"><option value="">—</option>{% for s in subdomains %}<option value="{{ s.pk }}">{{ s.name }}</option>{% endfor %}</select></div>
+            <div class="col-md-2"><label class="form-label small mb-0">Topic</label><select name="bulk_topic" class="form-select form-select-sm"><option value="">—</option>{% for t in topics %}<option value="{{ t.pk }}">{{ t.name }}</option>{% endfor %}</select></div>
+            <div class="col-md-2"><label class="form-label small mb-0">Concept</label><select name="bulk_concept" class="form-select form-select-sm"><option value="">—</option>{% for c in concepts %}<option value="{{ c.pk }}">{{ c.name }}</option>{% endfor %}</select></div>
+            <div class="col-md-1"><label class="form-label small mb-0">Conf.</label><select name="bulk_confidence_level" class="form-select form-select-sm"><option value="">—</option>{% for val, label in value_levels %}<option value="{{ val }}">{{ label }}</option>{% endfor %}</select></div>
+            <div class="col-md-1"><label class="form-label small mb-0">Cons.</label><select name="bulk_consulting_value" class="form-select form-select-sm"><option value="">—</option>{% for val, label in value_levels %}<option value="{{ val }}">{{ label }}</option>{% endfor %}</select></div>
+            <div class="col-md-1"><label class="form-label small mb-0">Teach.</label><select name="bulk_teaching_value" class="form-select form-select-sm"><option value="">—</option>{% for val, label in value_levels %}<option value="{{ val }}">{{ label }}</option>{% endfor %}</select></div>
+            <div class="col-md-2"><label class="form-label small mb-0">Tags</label><select name="bulk_tags" multiple class="form-select form-select-sm" style="min-height:32px">{% for tag in all_tags %}<option value="{{ tag.pk }}">{{ tag.name }}</option>{% endfor %}</select></div>
+            <div class="col-md-1"><button type="submit" class="btn btn-sm btn-success w-100">Apply</button></div>
+        </div>
+    </div>
+</form>
+    <div class="table-card review-workspace-table">
+        <table class="table table-sm table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:28px"><input type="checkbox" id="select-all-units"></th>
+                    <th style="width:28px"></th>
+                    <th>Title</th>
+                    <th>Insight</th>
+                    <th>Domain</th>
+                    <th>Type</th>
+                    <th>Values</th>
+                    <th>Governance</th>
+                    <th>Via</th>
+                    <th>Page</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in knowledge_units %}
+                <tr class="review-row {% if u.is_duplicate %}table-warning{% endif %}">
+                    <td><input type="checkbox" class="unit-check" name="unit_ids" value="{{ u.pk }}" form="bulk-unit-form"></td>
+                    <td><button type="button" class="btn btn-sm btn-link p-0 review-expand" data-bs-toggle="collapse" data-bs-target="#unit-{{ u.pk }}">▸</button></td>
+                    <td class="review-title"><a href="{% url 'knowledge:knowledgeunit_detail' u.pk %}">{{ u.title|truncatechars:36 }}</a>{% if u.is_duplicate %} <span class="badge bg-warning text-dark">Dup</span>{% endif %}</td>
+                    <td class="small text-muted">{{ u.executive_insight|truncatechars:50|default:"—" }}</td>
+                    <td class="small">{{ u.domain.name|truncatechars:14 }}{% if u.subdomain %} / {{ u.subdomain.name|truncatechars:10 }}{% endif %}</td>
+                    <td class="small">{{ u.get_knowledge_type_display }}</td>
+                    <td class="small">C:{{ u.get_consulting_value_display|slice:":1" }} T:{{ u.get_teaching_value_display|slice:":1" }} · {{ u.get_confidence_level_display|slice:":1" }}</td>
+                    <td class="small"><span class="badge bg-secondary">{{ u.get_governance_status_display }}</span></td>
+                    <td class="small">{{ u.get_imported_via_display|default:"—" }}</td>
+                    <td class="small">{{ u.page_reference|default:"—" }}</td>
+                    <td class="review-actions">
+                        <form method="post" action="{% url 'knowledge:knowledgeunit_quick_action' u.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="next_url" value="{{ next_url }}"><input type="hidden" name="action" value="approve"><button type="submit" class="btn btn-sm btn-success py-0" title="Approve">✓</button></form>
+                        <form method="post" action="{% url 'knowledge:knowledgeunit_quick_action' u.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="next_url" value="{{ next_url }}"><input type="hidden" name="action" value="mark_reviewed"><button type="submit" class="btn btn-sm btn-outline-primary py-0" title="Reviewed">R</button></form>
+                        <form method="post" action="{% url 'knowledge:knowledgeunit_quick_action' u.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="next_url" value="{{ next_url }}"><input type="hidden" name="action" value="archive"><button type="submit" class="btn btn-sm btn-outline-danger py-0" title="Archive">A</button></form>
+                        <form method="post" action="{% url 'knowledge:knowledgeunit_quick_action' u.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="next_url" value="{{ next_url }}"><input type="hidden" name="action" value="mark_duplicate"><button type="submit" class="btn btn-sm btn-outline-warning py-0" title="Duplicate">D</button></form>
+                        <div class="btn-group btn-group-sm d-inline-flex">
+                            <form method="post" action="{% url 'knowledge:knowledgeunit_quick_action' u.pk %}" class="d-flex">{% csrf_token %}<input type="hidden" name="next_url" value="{{ next_url }}"><input type="hidden" name="action" value="set_confidence"><select name="confidence_level" class="form-select form-select-sm py-0" style="width:3rem;font-size:0.7rem" onchange="this.form.submit()"><option value="">C</option>{% for val, label in value_levels %}<option value="{{ val }}" {% if u.confidence_level == val %}selected{% endif %}>{{ label|slice:":1" }}</option>{% endfor %}</select></form>
+                        </div>
+                        <a href="{% url 'knowledge:knowledgeunit_update' u.pk %}" class="btn btn-sm btn-outline-secondary py-0">Edit</a>
+                    </td>
+                </tr>
+                <tr class="collapse review-preview-row" id="unit-{{ u.pk }}">
+                    <td colspan="11" class="bg-light small">
+                        <div class="row g-2 py-2">
+                            <div class="col-md-4"><strong>Executive insight</strong><p class="mb-0">{{ u.executive_insight|default:"—"|linebreaksbr }}</p></div>
+                            <div class="col-md-4"><strong>Detailed explanation</strong><p class="mb-0">{{ u.detailed_explanation|default:"—"|linebreaksbr }}</p></div>
+                            <div class="col-md-4"><strong>Practical application</strong><p class="mb-0">{{ u.practical_application|default:"—"|linebreaksbr }}</p></div>
+                        </div>
+                        <div class="small text-muted">Topic: {{ u.topic|default:"—" }} · Concept: {{ u.concept|default:"—" }} · Review: {{ u.get_review_status_display }}</div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="11" class="text-center text-muted py-4">No knowledge units in this tab.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
+
+{% if page_obj %}
+<nav class="mt-3 d-flex justify-content-between align-items-center">
+    <span class="small text-muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} items)</span>
+    <div class="btn-group btn-group-sm">
+        {% if page_obj.has_previous %}<a href="?tab={{ tab }}&page={{ page_obj.previous_page_number }}&q={{ query|urlencode }}&batch={{ filter_batch }}" class="btn btn-outline-secondary">Previous</a>{% endif %}
+        {% if page_obj.has_next %}<a href="?tab={{ tab }}&page={{ page_obj.next_page_number }}&q={{ query|urlencode }}&batch={{ filter_batch }}" class="btn btn-outline-secondary">Next</a>{% endif %}
+    </div>
+</nav>
+{% endif %}
+
+<script>
+document.getElementById('select-all-candidates')?.addEventListener('change', function () {
+    document.querySelectorAll('.candidate-check').forEach(cb => { cb.checked = this.checked; });
+});
+document.getElementById('select-all-units')?.addEventListener('change', function () {
+    document.querySelectorAll('.unit-check').forEach(cb => { cb.checked = this.checked; });
+});
+document.querySelectorAll('.review-expand').forEach(btn => {
+    btn.addEventListener('click', function () {
+        this.textContent = this.getAttribute('aria-expanded') === 'true' ? '▸' : '▾';
+    });
+});
+</script>
+{% endblock %}

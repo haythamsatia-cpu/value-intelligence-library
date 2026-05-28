@@ -319,6 +319,7 @@ class CandidateListView(ListView):
         context['filter_batch'] = self.request.GET.get('batch', '')
         context['filter_domain'] = self.request.GET.get('proposed_domain', '')
         context['filter_knowledge_type'] = self.request.GET.get('proposed_knowledge_type', '')
+        context['filter_source'] = self.request.GET.get('source', '')
         context['batches'] = ExtractionBatch.objects.order_by('-updated_at')[:50]
         return context
 
@@ -378,9 +379,15 @@ class CandidateImportView(View):
         candidate = get_object_or_404(ExtractionCandidate, pk=pk)
         if candidate.import_status == ExtractionCandidate.ImportStatus.REJECTED:
             messages.warning(request, 'Rejected candidates cannot be imported.')
+            next_url = request.POST.get('next_url')
+            if next_url:
+                return redirect(next_url)
             return redirect('ai_extraction:candidate_detail', pk=pk)
         unit, similar = import_candidate_to_knowledge_unit(candidate)
         flash_import_result(request, unit, candidate, similar)
+        next_url = request.POST.get('next_url')
+        if next_url:
+            return redirect(next_url)
         if unit:
             return redirect('knowledge:knowledgeunit_detail', pk=unit.pk)
         return redirect('ai_extraction:candidate_detail', pk=pk)
@@ -424,6 +431,9 @@ class CandidateRejectView(View):
             return redirect('ai_extraction:candidate_detail', pk=pk)
         reject_candidate(candidate)
         messages.success(request, f'Candidate "{candidate.title}" rejected.')
+        next_url = request.POST.get('next_url')
+        if next_url:
+            return redirect(next_url)
         return redirect('ai_extraction:candidate_detail', pk=pk)
 
 

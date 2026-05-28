@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import bulk_import_views, views
+from . import bulk_import_views, review_workspace_views, views
 
 app_name = 'library'
 
@@ -35,6 +35,21 @@ urlpatterns = [
     path('sources/export.csv', views.SourceExportCSVView.as_view(), name='source_export_csv'),
     path('sources/create/', views.SourceCreateView.as_view(), name='source_create'),
     path('sources/<uuid:pk>/', views.SourceDetailView.as_view(), name='source_detail'),
+    path(
+        'sources/<uuid:pk>/review-workspace/',
+        review_workspace_views.SourceReviewWorkspaceView.as_view(),
+        name='source_review_workspace',
+    ),
+    path(
+        'sources/<uuid:pk>/review-workspace/bulk/',
+        review_workspace_views.SourceReviewWorkspaceBulkView.as_view(),
+        name='source_review_workspace_bulk',
+    ),
+    path(
+        'sources/<uuid:pk>/review-workspace/candidates/<uuid:candidate_pk>/action/',
+        review_workspace_views.SourceReviewWorkspaceCandidateActionView.as_view(),
+        name='source_review_workspace_candidate_action',
+    ),
     path('sources/<uuid:pk>/edit/', views.SourceUpdateView.as_view(), name='source_update'),
     path('sources/<uuid:pk>/delete/', views.SourceDeleteView.as_view(), name='source_delete'),
     path('chapters/', views.ChapterListView.as_view(), name='chapter_list'),
