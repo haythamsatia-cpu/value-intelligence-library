@@ -5,7 +5,7 @@ from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
 from ai_extraction.models import DocumentIngestionJob, ExtractionBatch
-from taxonomy.models import Domain
+from taxonomy.models import Domain, Tag
 
 from .exports import export_chapters_csv, export_processing_center_csv, export_sources_csv
 from .forms import AuthorForm, ChapterForm, SourceForm
@@ -94,18 +94,43 @@ class SourceDetailView(DetailView):
         return context
 
 
-class SourceCreateView(CreateView):
+class SourceFormContextMixin:
+    """Token-picker option lists for source create/edit."""
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        authors = list(Author.objects.order_by('name').values_list('name', flat=True)[:1000])
+        tags = list(Tag.objects.order_by('name').values_list('name', flat=True)[:1000])
+        obj = getattr(self, 'object', None)
+        if obj and obj.pk:
+            for name in obj.authors.order_by('name').values_list('name', flat=True):
+                if name not in authors:
+                    authors.append(name)
+            for name in obj.tags.order_by('name').values_list('name', flat=True):
+                if name not in tags:
+                    tags.append(name)
+        context['author_suggestions'] = authors
+        context['tag_suggestions'] = tags
+        return context
+
+
+class SourceCreateView(SourceFormContextMixin, CreateView):
     model = Source
     form_class = SourceForm
     template_name = 'library/source_form.html'
     success_url = reverse_lazy('library:source_list')
 
 
-class SourceUpdateView(UpdateView):
+class SourceUpdateView(SourceFormContextMixin, UpdateView):
     model = Source
     form_class = SourceForm
     template_name = 'library/source_form.html'
     context_object_name = 'source'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['object'] = self.object
+        return context
 
     def get_success_url(self):
         return reverse_lazy('library:source_detail', kwargs={'pk': self.object.pk})

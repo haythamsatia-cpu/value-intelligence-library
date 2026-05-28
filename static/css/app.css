@@ -145,3 +145,109 @@ body {
 .review-preview-row td {
     border-top: none !important;
 }
+
+.source-form-page .source-form-section {
+    border: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.source-form-page .source-form-section .card-header {
+    background: #f8f9fb;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.source-form-page .source-form-section .card-body {
+    padding: 0.5rem 0.75rem;
+}
+
+.source-form-page .mb-3,
+.source-form-page .mb-2 {
+    margin-bottom: 0.35rem !important;
+}
+
+.source-form-page .form-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.15rem;
+}
+
+.source-form-page .form-text {
+    font-size: 0.6875rem;
+    margin-top: 0.1rem;
+}
+
+.source-form-page .form-control-sm,
+.source-form-page .form-select-sm {
+    font-size: 0.8125rem;
+    min-height: calc(1.5em + 0.5rem + 2px);
+}
+
+.source-form-page textarea.form-control-sm {
+    min-height: 4.5rem;
+}
+
+.source-form-page .token-select-mount + .source-token-fallback {
+    margin-top: 0;
+}
+
+.source-form-page .ts-wrapper.form-control,
+.source-form-page .ts-wrapper.form-select {
+    padding: 0;
+    border: none;
+    min-height: auto;
+    background: transparent;
+}
+
+.source-form-page .ts-control {
+    min-height: calc(1.5em + 0.5rem + 2px);
+    padding: 0.2rem 0.4rem;
+    font-size: 0.8125rem;
+    border-radius: 0.25rem;
+    border: 1px solid #ced4da;
+}
+
+.source-form-page .ts-control.focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}
+
+.source-form-page .ts-dropdown {
+    font-size: 0.8125rem;
+    z-index: 1050;
+}
+
+.source-form-page .ts-dropdown .option {
+    padding: 0.35rem 0.5rem;
+}
+
+.source-form-page .ts-wrapper.multi .ts-control > div {
+    margin: 0.1rem 0.2rem 0.1rem 0;
+}
+
+.source-form-page .ts-wrapper.multi .ts-control > div.item,
+.source-form-page .ts-wrapper.multi .ts-control .ts-chip {
+    background: #e9ecef;
+    color: #212529;
+    border: 0;
+    border-radius: 0.2rem;
+    padding: 0.05rem 0.35rem;
+    font-size: 0.75rem;
+}
+
+.source-form-page .ts-wrapper.multi .ts-control > div.item .remove {
+    border-left: 1px solid #ced4da;
+    padding: 0 0.25rem;
+}
+
+.source-form-page .page-header {
+    margin-bottom: 0.75rem;
+}
+
+@media (min-width: 992px) {
+    .source-form-page .source-form-actions {
+        position: sticky;
+        top: calc(var(--vil-topbar-height) + 0.35rem);
+        z-index: 10;
+    }
+}

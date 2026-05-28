@@ -1,17 +1,118 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}{% if object %}Edit{% else %}Add{% endif %} Source — Value Intelligence Library{% endblock %}
+
+{% block extra_head %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<noscript>
+<style>
+.token-select-mount { display: none !important; }
+.source-token-fallback { display: block !important; }
+</style>
+</noscript>
+{% endblock %}
+
 {% block content %}
-<div class="page-header">
-    <h1 class="h3 mb-0">{% if object %}Edit Source{% else %}Add Source{% endif %}</h1>
-</div>
-<div class="detail-section">
-    <form method="post" enctype="multipart/form-data">
+<div class="source-form-page">
+    <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+        <div>
+            <h1 class="h4 mb-0">{% if object %}Edit Source{% else %}Add Source{% endif %}</h1>
+        </div>
+        <div class="source-form-actions d-flex gap-2">
+            <button type="submit" form="source-form" class="btn btn-primary btn-sm">Save</button>
+            <a href="{% if object %}{% url 'library:source_detail' object.pk %}{% else %}{% url 'library:source_list' %}{% endif %}" class="btn btn-outline-secondary btn-sm">Cancel</a>
+        </div>
+    </div>
+
+    {{ author_suggestions|json_script:"author-options-json" }}
+    {{ tag_suggestions|json_script:"tag-options-json" }}
+
+    <form method="post" enctype="multipart/form-data" id="source-form">
         {% csrf_token %}
-        {% include 'includes/form_fields.html' %}
-        <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary">Save</button>
-            <a href="{% if object %}{% url 'library:source_detail' object.pk %}{% else %}{% url 'library:source_list' %}{% endif %}" class="btn btn-outline-secondary">Cancel</a>
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger py-2 small">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="card source-form-section mb-2">
+            <div class="card-header py-1 px-3"><h2 class="h6 mb-0 small fw-semibold">Main Details</h2></div>
+            <div class="card-body py-2 px-3">
+                <div class="row g-2">
+                    <div class="col-md-5">{% include 'includes/form_field.html' with field=form.title compact=1 only %}</div>
+                    <div class="col-md-4">{% include 'includes/form_field.html' with field=form.subtitle compact=1 only %}</div>
+                    <div class="col-md-3">{% include 'includes/form_field.html' with field=form.source_type compact=1 only %}</div>
+                    <div class="col-md-4">{% include 'includes/form_field.html' with field=form.primary_domain compact=1 only %}</div>
+                    <div class="col-md-2">{% include 'includes/form_field.html' with field=form.priority compact=1 only %}</div>
+                    <div class="col-md-2">{% include 'includes/form_field.html' with field=form.status compact=1 only %}</div>
+                    <div class="col-md-2">{% include 'includes/form_field.html' with field=form.year compact=1 only %}</div>
+                    <div class="col-md-2">{% include 'includes/form_field.html' with field=form.edition compact=1 only %}</div>
+                    <div class="col-md-4">{% include 'includes/form_field.html' with field=form.publisher compact=1 only %}</div>
+                    <div class="col-md-3">{% include 'includes/form_field.html' with field=form.isbn compact=1 only %}</div>
+                    <div class="col-md-2">{% include 'includes/form_field.html' with field=form.total_pages compact=1 only %}</div>
+                    <div class="col-md-1">{% include 'includes/form_field.html' with field=form.source_extension compact=1 only %}</div>
+                    <div class="col-md-2">{% include 'includes/form_field.html' with field=form.source_file_size compact=1 only %}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card source-form-section mb-2">
+            <div class="card-header py-1 px-3"><h2 class="h6 mb-0 small fw-semibold">Authors &amp; Tags</h2></div>
+            <div class="card-body py-2 px-3">
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <div class="mb-2">
+                            <label for="authors-ts" class="form-label">{{ form.authors_text.label }}</label>
+                            <select id="authors-ts" class="token-select-mount d-none" multiple aria-label="Authors"></select>
+                            {{ form.authors_text }}
+                            {% if form.authors_text.help_text %}<div class="form-text">{{ form.authors_text.help_text }}</div>{% endif %}
+                            {% for error in form.authors_text.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-2">
+                            <label for="tags-ts" class="form-label">{{ form.tags_text.label }}</label>
+                            <select id="tags-ts" class="token-select-mount d-none" multiple aria-label="Tags"></select>
+                            {{ form.tags_text }}
+                            {% if form.tags_text.help_text %}<div class="form-text">{{ form.tags_text.help_text }}</div>{% endif %}
+                            {% for error in form.tags_text.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <p class="form-text mb-0 mt-1">
+                    <a href="{% url 'library:author_list' %}" target="_blank" class="small">Authors</a>
+                    ·
+                    <a href="{% url 'taxonomy:tag_list' %}" target="_blank" class="small">Tags</a>
+                </p>
+            </div>
+        </div>
+
+        <div class="card source-form-section mb-2">
+            <div class="card-header py-1 px-3"><h2 class="h6 mb-0 small fw-semibold">Files</h2></div>
+            <div class="card-body py-2 px-3">
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        {% include 'includes/form_field.html' with field=form.file compact=1 only %}
+                        {% if object.file %}<p class="small mb-0 mt-n1"><a href="{{ object.file.url }}" target="_blank">Current file</a></p>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        {% include 'includes/form_field.html' with field=form.source_file compact=1 only %}
+                        {% if object.source_file %}<p class="small mb-0 mt-n1"><a href="{{ object.source_file.url }}" target="_blank">Current copy</a></p>{% endif %}
+                    </div>
+                    <div class="col-12">{% include 'includes/form_field.html' with field=form.original_file_path compact=1 only %}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card source-form-section mb-2">
+            <div class="card-header py-1 px-3"><h2 class="h6 mb-0 small fw-semibold">Notes</h2></div>
+            <div class="card-body py-2 px-3">
+                {% include 'includes/form_field.html' with field=form.notes compact=1 only %}
+            </div>
         </div>
     </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/js/tom-select.complete.min.js"></script>
+<script src="{% static 'js/source_form_tokens.js' %}"></script>
 {% endblock %}
